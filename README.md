@@ -28,7 +28,34 @@ A personal basketball game tracking application that helps fans document and ana
 4. Install requirements: `pip install -r requirements.txt`
 5. Run the Streamlit app: `streamlit run streamlit/app.py`
 
-## Project Structure 
+## Project Structure
+
+basketball-game-tracker/
+├── src/
+│   ├── data/
+│   │   ├── basketball_reference_scraper.py  # Basketball Reference data scraping
+│   │   ├── nba_api_client.py               # NBA API integration
+│   │   └── database_models.py              # Database models and schemas
+│   ├── core/
+│   │   ├── game_tracker.py                 # Core game tracking logic
+│   │   ├── team_manager.py                 # Team management functionality
+│   │   ├── venue_manager.py                # Arena/venue management
+│   │   └── user_profile.py                 # User profile handling
+│   ├── utils/
+│   │   ├── data_validators.py              # Input validation utilities
+│   │   └── date_helpers.py                 # Date manipulation helpers
+│   └── visualization/
+│       ├── game_charts.py                  # Game-specific visualizations
+│       └── stat_plots.py                   # Statistical analysis plots
+├── streamlit/
+│   ├── main_app.py                         # Main Streamlit application
+│   └── pages/
+│       ├── add_new_game.py                 # Add new game interface
+│       ├── view_statistics.py              # Statistics viewing page
+│       ├── game_memories.py                # Game memories and photos
+│       └── user_settings.py                # User settings page
+├── tests/                                  # Test files
+└── docs/                                   # Documentation
 
 ## Contributing
 We welcome contributions from the basketball community! 
