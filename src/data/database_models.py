@@ -21,20 +21,18 @@ class Game(Base):
     # When the game was played
     date = Column(Date, nullable=False)
     
-    # Game Details (scraped from Basketball Reference)
-    home_team = Column(String(50), nullable=False)  # e.g., "Boston Celtics"
-    away_team = Column(String(50), nullable=False)  # e.g., "Los Angeles Lakers"
-    home_score = Column(Integer)                    # Final score for home team
-    away_score = Column(Integer)                    # Final score for away team
+    # Game Details (from scraper)
+    home_team = Column(String(50), nullable=False)
+    away_team = Column(String(50), nullable=False)
+    home_score = Column(Integer)
+    away_score = Column(Integer)
     
-    # Personal Attendance Details
-    seat_section = Column(String(20))   # e.g., "Loge 12", "Balcony 324"
-    seat_row = Column(String(10))       # e.g., "7", "AA"
-    seat_number = Column(String(10))    # e.g., "12", "3-4"
-    ticket_price = Column(Float)        # How much paid for ticket(s)
-    attended_with = Column(String(200)) # Who went to the game with you
-    notes = Column(Text)                # Any personal notes about the game
-    weather = Column(String(100))       # Weather conditions during game
+    # Personal Details
+    seat_section = Column(String(20))
+    seat_row = Column(String(10))
+    seat_number = Column(String(10))
+    attended_with = Column(String(200))
+    notes = Column(Text)
     
     # Relationship to photos - allows multiple photos per game
     # Access using game.photos to get all photos for a game
