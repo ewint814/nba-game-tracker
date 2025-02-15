@@ -38,6 +38,12 @@ class Game(Base):
     # Access using game.photos to get all photos for a game
     photos = relationship("Photo", back_populates="game")
 
+    # Added arena field
+    arena = Column(String)
+
+    # Added game_id field
+    game_id = Column(String)
+
 class Photo(Base):
     """
     Stores photos from attended games.

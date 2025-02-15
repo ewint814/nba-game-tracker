@@ -1,62 +1,58 @@
 # Basketball Game Tracker - TODO List
 
-## Current Progress
-- ✅ Set up project structure
-- ✅ Implement basic game scraper
-- ✅ Successfully fetch and display game results
-- ✅ Create basic database structure
-- ✅ Implement game adding functionality
+## Completed ✅
+- Set up project structure
+- Create basic database structure
+- Implement game adding functionality
+- Set up NBA API (swar/nba_api)
+  - Integrate basic endpoints
+  - Get game data (teams, arena, scores)
+  - Successfully fetch and display game results
 
 ## Next Steps
 
-### API Integration
-1. Set up NBA API (swar/nba_api)
-   - [ ] Integrate basic endpoints
-   - [ ] Set up rate limiting
-   - [ ] Handle authentication if needed
-   - [ ] Test real-time data fetching
+### NBA API Integration
+- [ ] Add more game statistics:
+  - [ ] Quarter by quarter scoring
+  - [ ] Team lineups/rotations
+  - [ ] Game start time
+  - [ ] Officials
+  - [ ] Attendance numbers
 
-2. Set up Basketball Reference Scraper
-   - [ ] Integrate basic API functionality
-   - [ ] Extend API for additional data points:
-     - [ ] Referee information
-     - [ ] Arena and attendance
-     - [ ] Game start time
-     - [ ] Line score (quarter by quarter)
-     - [ ] Four factors stats
-     - [ ] Inactive players list
-     - [ ] Officials
-     - [ ] Pre/post game notes
-     - [ ] Team lineups/rotations
-     - [ ] Timeout usage
+### Database Improvements
+- [ ] Add proper indexing
+- [ ] Add data validation
+- [ ] Consider adding more game details
 
-3. Data Integration
-   - [ ] Merge data from both sources
-   - [ ] Handle conflicts/validation
-   - [ ] Update database schema for new data
-   - [ ] Create unified data access layer
+### Streamlit Interface
+1. My Games Page Improvements
+   - [ ] Add grouping options:
+     - By season/year
+     - By team
+     - By arena
+     - By who attended with
+   
+   - [ ] Add filtering options:
+     - Home/away team filters
+     - Date range selector
+     - Score filters (close games, blowouts)
+     - Arena filter
+   
+   - [ ] Improve game display:
+     - Better score display format
+     - Add team logos/colors
+     - Show more game stats
+     - Better layout for attendance details
 
-### Existing Tasks
-1. Enhance Game Statistics
+2. Statistics Page
    - [ ] Add win/loss record when attending
    - [ ] Calculate points scored/allowed
    - [ ] Track favorite/most opponents seen
    - [ ] Show best/worst games attended
-
-2. Database Improvements
-   - [ ] Add proper home/away team detection
-   - [ ] Add game time information
-   - [ ] Consider adding arena/venue information
-
-3. Streamlit Interface
-   - [ ] Improve game display formatting
-   - [ ] Add filtering/sorting options
-   - [ ] Add photo upload capability
-   - [ ] Add data export functionality
 
 ### Future Features
 - [ ] Add photo gallery
 - [ ] Add game highlights/recap links
 - [ ] Add memorable moments tracking
 - [ ] Add search functionality
-- [ ] Add chatgpt integration
+- [ ] Add ticket price tracking
