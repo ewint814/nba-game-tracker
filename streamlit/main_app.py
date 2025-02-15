@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
 from src.data.database_models import Game, Photo, Base
+from src.data.nba_api_client import NBAApiClient
 
 # Initialize database connection
 engine = create_engine('sqlite:///basketball_tracker.db')
@@ -23,14 +24,19 @@ def main():
     
     # Create sidebar navigation menu
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Add Game", "My Games", "Statistics"])
+    page = st.sidebar.selectbox(
+        "Select Page",
+        ["Add Game", "My Games", "Statistics", "Test API"]  # Added Test API
+    )
     
     if page == "Add Game":
         show_add_game()
     elif page == "My Games":
         show_my_games()
-    else:
+    elif page == "Statistics":
         show_statistics()
+    elif page == "Test API":
+        show_test_data()
 
 def show_add_game():
     """Form to add a new game you've attended."""
@@ -48,13 +54,17 @@ def show_add_game():
         st.session_state.available_games = []
         
     if st.button("Find Games"):
-        scraper = BasketballReferenceScraper()
+        client = NBAApiClient()
         date_str = date.strftime("%Y-%m-%d")
         
         try:
-            html = scraper.get_games_for_date(date_str)
-            games = scraper.parse_games(html)
+            games = client.get_games_for_date(date_str)
             st.session_state.available_games = games
+            
+            if not games:
+                st.info("No games found for this date")
+            else:
+                st.success(f"Found {len(games)} games!")
             
         except Exception as e:
             st.error(f"Error fetching games: {str(e)}")
@@ -62,7 +72,7 @@ def show_add_game():
     # Show game selection if games are available
     if st.session_state.available_games:
         game_options = [
-            f"{game['Winner']} ({game['Winner Score']}) vs {game['Loser']} ({game['Loser Score']})"
+            f"{game['away_team']} @ {game['home_team']} - {game['arena']}"
             for game in st.session_state.available_games
         ]
         selected_game = st.radio("Select Game:", game_options)
@@ -89,15 +99,17 @@ def show_add_game():
                     try:
                         new_game = Game(
                             date=date,
-                            home_team=game_data['Winner'],  # Simplified - need to determine home/away
-                            away_team=game_data['Loser'],
-                            home_score=game_data['Winner Score'],
-                            away_score=game_data['Loser Score'],
+                            home_team=game_data['home_team'],
+                            away_team=game_data['away_team'],
+                            home_score=0,  # We'll add scores later
+                            away_score=0,  # We'll add scores later
                             seat_section=seat_section,
                             seat_row=seat_row,
                             seat_number=seat_number,
                             attended_with=attended_with,
-                            notes=notes
+                            notes=notes,
+                            arena=game_data['arena'],
+                            game_id=game_data['game_id']
                         )
                         session.add(new_game)
                         session.commit()
@@ -145,6 +157,39 @@ def show_statistics():
             st.info("Add some games to see statistics!")
     finally:
         session.close()
+
+def show_test_data():
+    """Debug page to show raw API data"""
+    st.header("NBA Games Lookup")
+    
+    # Create API client
+    client = NBAApiClient()
+    
+    # Date selector
+    selected_date = st.date_input(
+        "Select Date",
+        value=datetime.now()
+    )
+    
+    if st.button("Get Games"):
+        try:
+            # Convert date to string format
+            date_str = selected_date.strftime("%Y-%m-%d")
+            games = client.get_games_for_date(date_str)
+            
+            if not games:
+                st.info("No games found for this date")
+            else:
+                st.success(f"Found {len(games)} games!")
+                
+                for game in games:
+                    with st.expander(f"{game['away_team']} @ {game['home_team']}"):
+                        st.write(f"Arena: {game['arena']}")
+                        st.write(f"Game ID: {game['game_id']}")
+                        st.write(f"Date: {game['date']}")
+        
+        except Exception as e:
+            st.error(f"Error fetching data: {str(e)}")
 
 if __name__ == "__main__":
     main()
