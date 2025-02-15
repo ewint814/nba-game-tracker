@@ -21,11 +21,13 @@ class Game(Base):
     # When the game was played
     date = Column(Date, nullable=False)
     
-    # Game Details (from scraper)
+    # Game Details (from NBA API)
     home_team = Column(String(50), nullable=False)
     away_team = Column(String(50), nullable=False)
     home_score = Column(Integer)
     away_score = Column(Integer)
+    arena = Column(String)
+    game_id = Column(String)
     
     # Personal Details
     seat_section = Column(String(20))
@@ -34,15 +36,42 @@ class Game(Base):
     attended_with = Column(String(200))
     notes = Column(Text)
     
+    # Detailed Game Stats
+    attendance = Column(Integer)
+    duration = Column(String(20))
+    officials = Column(String(200))
+    
+    # Quarter Scores
+    home_q1 = Column(Integer)
+    home_q2 = Column(Integer)
+    home_q3 = Column(Integer)
+    home_q4 = Column(Integer)
+    away_q1 = Column(Integer)
+    away_q2 = Column(Integer)
+    away_q3 = Column(Integer)
+    away_q4 = Column(Integer)
+    
+    # Overtime Scores
+    home_ot1 = Column(Integer)
+    home_ot2 = Column(Integer)
+    home_ot3 = Column(Integer)
+    away_ot1 = Column(Integer)
+    away_ot2 = Column(Integer)
+    away_ot3 = Column(Integer)
+    
+    # Team Stats
+    home_paint_points = Column(Integer)
+    away_paint_points = Column(Integer)
+    home_second_chance_points = Column(Integer)
+    away_second_chance_points = Column(Integer)
+    home_fast_break_points = Column(Integer)
+    away_fast_break_points = Column(Integer)
+    home_largest_lead = Column(Integer)
+    away_largest_lead = Column(Integer)
+    
     # Relationship to photos - allows multiple photos per game
     # Access using game.photos to get all photos for a game
     photos = relationship("Photo", back_populates="game")
-
-    # Added arena field
-    arena = Column(String)
-
-    # Added game_id field
-    game_id = Column(String)
 
 class Photo(Base):
     """

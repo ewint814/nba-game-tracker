@@ -1,28 +1,18 @@
-# Basketball Game Tracker - TODO List
+# Basketball Game Tracker TODO
 
 ## Completed ✅
-- Set up project structure
-- Create basic database structure
-- Implement game adding functionality
-- Set up NBA API (swar/nba_api)
-  - Integrate basic endpoints
-  - Get game data (teams, arena, scores)
-  - Successfully fetch and display game results
+- Basic project structure
+- Database setup with SQLAlchemy
+- NBA API integration for getting game data
+- Basic Streamlit interface
+- Game saving functionality
+- Detailed game stats (attendance, duration, officials, quarter scores, team stats)
+- Test API section with data verification
 
 ## Next Steps
 
 ### NBA API Integration
-- [ ] Add more game statistics:
-  - [ ] Quarter by quarter scoring
-  - [ ] Team lineups/rotations
-  - [ ] Game start time
-  - [ ] Officials
-  - [ ] Attendance numbers
-
-### Database Improvements
-- [ ] Add proper indexing
-- [ ] Add data validation
-- [ ] Consider adding more game details
+- [ ] Fix overtime period handling in game stats
 
 ### Streamlit Interface
 1. My Games Page Improvements
@@ -56,3 +46,6 @@
 - [ ] Add memorable moments tracking
 - [ ] Add search functionality
 - [ ] Add ticket price tracking
+- Add data visualization for game statistics
+- Add weather data for game days
+- Add player stats tracking

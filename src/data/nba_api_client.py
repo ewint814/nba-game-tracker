@@ -40,43 +40,37 @@ class NBAApiClient:
             )
             
             games = board.get_dict()
-            game_data = games['resultSets'][0]['rowSet']
+            game_data = games['resultSets'][0]['rowSet']  # GameHeader
+            line_score = games['resultSets'][1]['rowSet']  # LineScore has the scores
             
-            # Format game data
             formatted_games = []
-            for game in game_data:
+            for i, game in enumerate(game_data):
+                game_id = str(game[2])  # GAME_ID
                 home_team_id = game[6]  # HOME_TEAM_ID
                 visitor_team_id = game[7]  # VISITOR_TEAM_ID
                 arena = game[15]  # ARENA_NAME
-                game_id = game[2]  # GAME_ID
                 
-                # Get scores from box score
-                try:
-                    box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=str(game_id))
-                    box_data = box.get_dict()
-                    line_score = box_data['resultSets'][5]  # LineScore is result set 5
-                    rows = line_score['rowSet']
-                    away_score = rows[0][-1]  # Last element is PTS
-                    home_score = rows[1][-1]  # Last element is PTS
-                except:
-                    away_score = 0
-                    home_score = 0
+                # Get scores from LineScore (two rows per game: away team then home team)
+                home_score = line_score[i*2 + 1][22]  # PTS column for home team
+                away_score = line_score[i*2][22]      # PTS column for away team
                 
                 formatted_game = {
-                    'game_id': str(game_id),
-                    'home_team': self.team_dict.get(home_team_id, f"Unknown Team ({home_team_id})"),
-                    'away_team': self.team_dict.get(visitor_team_id, f"Unknown Team ({visitor_team_id})"),
+                    'game_id': game_id,
+                    'home_team': self.team_dict.get(home_team_id),
+                    'away_team': self.team_dict.get(visitor_team_id),
                     'home_score': home_score,
                     'away_score': away_score,
                     'arena': arena,
                     'date': date_str
                 }
+                
                 formatted_games.append(formatted_game)
             
             return formatted_games
             
         except Exception as e:
             print(f"Error in get_games_for_date: {str(e)}")
+            print(f"Full error details: {str(e.__class__.__name__)}: {str(e)}")
             raise
 
     def get_box_score(self, game_id):
@@ -91,6 +85,49 @@ class NBAApiClient:
         """
         # TODO: Implement box score fetching when needed
         pass
+
+    def get_detailed_stats(self, game_id):
+        """Get detailed statistics for a specific game."""
+        try:
+            # Get detailed box score data
+            box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
+            box_data = box.get_dict()
+            
+            # Get all the detailed data
+            game_info = box_data['resultSets'][4]['rowSet'][0]  # GameInfo
+            team_stats = box_data['resultSets'][1]['rowSet']    # OtherStats
+            line_score = box_data['resultSets'][5]['rowSet']    # LineScore
+            officials = box_data['resultSets'][2]['rowSet']     # Officials
+            
+            return {
+                'attendance': game_info[1],
+                'duration': game_info[2],
+                'officials': ", ".join([f"{off[1]} {off[2]}" for off in officials]),
+                
+                # Quarter scores
+                'home_q1': line_score[1][8],
+                'home_q2': line_score[1][9],
+                'home_q3': line_score[1][10],
+                'home_q4': line_score[1][11],
+                'away_q1': line_score[0][8],
+                'away_q2': line_score[0][9],
+                'away_q3': line_score[0][10],
+                'away_q4': line_score[0][11],
+                
+                # Team stats
+                'home_paint_points': team_stats[1][4],
+                'away_paint_points': team_stats[0][4],
+                'home_second_chance_points': team_stats[1][5],
+                'away_second_chance_points': team_stats[0][5],
+                'home_fast_break_points': team_stats[1][6],
+                'away_fast_break_points': team_stats[0][6],
+                'home_largest_lead': team_stats[1][7],
+                'away_largest_lead': team_stats[0][7]
+            }
+            
+        except Exception as e:
+            print(f"Error getting detailed stats for game {game_id}: {str(e)}")
+            raise
 
 
 if __name__ == "__main__":
@@ -110,23 +147,10 @@ if __name__ == "__main__":
             print(f"Arena: {game['arena']}")
             print(f"Game ID: {game['game_id']}")
             
-            # Test getting box score for this game
-            try:
-                box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game['game_id'])
-                box_data = box.get_dict()
-                
-                # Get scores from LineScore
-                line_score = box_data['resultSets'][5]  # LineScore is result set 5
-                rows = line_score['rowSet']
-                
-                # First row is away team, second row is home team
-                away_score = rows[0][-1]  # Last element is PTS
-                home_score = rows[1][-1]  # Last element is PTS
-                
-                print(f"Score: {away_score} - {home_score}")
-                
-            except Exception as e:
-                print(f"Error getting box score: {str(e)}")
+            # Test detailed stats
+            print("\nDetailed stats:")
+            detailed = client.get_detailed_stats(game['game_id'])
+            print(detailed)
             
     except Exception as e:
         print(f"Error: {str(e)}")
