@@ -72,7 +72,7 @@ def show_add_game():
     # Show game selection if games are available
     if st.session_state.available_games:
         game_options = [
-            f"{game['away_team']} @ {game['home_team']} - {game['arena']}"
+            f"{game['away_team']} ({game['away_score']}) @ {game['home_team']} ({game['home_score']}) - {game['arena']}"
             for game in st.session_state.available_games
         ]
         selected_game = st.radio("Select Game:", game_options)
@@ -101,8 +101,8 @@ def show_add_game():
                             date=date,
                             home_team=game_data['home_team'],
                             away_team=game_data['away_team'],
-                            home_score=0,  # We'll add scores later
-                            away_score=0,  # We'll add scores later
+                            home_score=game_data['home_score'],
+                            away_score=game_data['away_score'],
                             seat_section=seat_section,
                             seat_row=seat_row,
                             seat_number=seat_number,
@@ -183,7 +183,7 @@ def show_test_data():
                 st.success(f"Found {len(games)} games!")
                 
                 for game in games:
-                    with st.expander(f"{game['away_team']} @ {game['home_team']}"):
+                    with st.expander(f"{game['away_team']} ({game['away_score']}) @ {game['home_team']} ({game['home_score']})"):
                         st.write(f"Arena: {game['arena']}")
                         st.write(f"Game ID: {game['game_id']}")
                         st.write(f"Date: {game['date']}")

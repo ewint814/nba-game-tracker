@@ -5,7 +5,7 @@ This module provides a wrapper around the nba_api package to fetch game data,
 statistics, and other NBA-related information.
 """
 
-from nba_api.stats.endpoints import scoreboardv2
+from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2
 from nba_api.stats.static import teams
 from datetime import datetime
 
@@ -50,10 +50,24 @@ class NBAApiClient:
                 arena = game[15]  # ARENA_NAME
                 game_id = game[2]  # GAME_ID
                 
+                # Get scores from box score
+                try:
+                    box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=str(game_id))
+                    box_data = box.get_dict()
+                    line_score = box_data['resultSets'][5]  # LineScore is result set 5
+                    rows = line_score['rowSet']
+                    away_score = rows[0][-1]  # Last element is PTS
+                    home_score = rows[1][-1]  # Last element is PTS
+                except:
+                    away_score = 0
+                    home_score = 0
+                
                 formatted_game = {
                     'game_id': str(game_id),
                     'home_team': self.team_dict.get(home_team_id, f"Unknown Team ({home_team_id})"),
                     'away_team': self.team_dict.get(visitor_team_id, f"Unknown Team ({visitor_team_id})"),
+                    'home_score': home_score,
+                    'away_score': away_score,
                     'arena': arena,
                     'date': date_str
                 }
@@ -84,7 +98,7 @@ if __name__ == "__main__":
     client = NBAApiClient()
     
     # Test with a specific date
-    test_date = "2025-02-10"
+    test_date = "2024-02-13"
     print(f"\nGetting games for {test_date}:")
     
     try:
@@ -92,8 +106,27 @@ if __name__ == "__main__":
         print(f"\nFound {len(games)} games:")
         
         for game in games:
-            print(f"\n{game['away_team']} @ {game['home_team']}")
+            print(f"\n{game['away_team']} ({game['away_score']}) @ {game['home_team']} ({game['home_score']})")
             print(f"Arena: {game['arena']}")
             print(f"Game ID: {game['game_id']}")
+            
+            # Test getting box score for this game
+            try:
+                box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game['game_id'])
+                box_data = box.get_dict()
+                
+                # Get scores from LineScore
+                line_score = box_data['resultSets'][5]  # LineScore is result set 5
+                rows = line_score['rowSet']
+                
+                # First row is away team, second row is home team
+                away_score = rows[0][-1]  # Last element is PTS
+                home_score = rows[1][-1]  # Last element is PTS
+                
+                print(f"Score: {away_score} - {home_score}")
+                
+            except Exception as e:
+                print(f"Error getting box score: {str(e)}")
+            
     except Exception as e:
         print(f"Error: {str(e)}")
