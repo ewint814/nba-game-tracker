@@ -9,14 +9,38 @@
 
 ## Next Steps
 
-### Immediate Tasks
+### API Integration
+1. Set up NBA API (swar/nba_api)
+   - [ ] Integrate basic endpoints
+   - [ ] Set up rate limiting
+   - [ ] Handle authentication if needed
+   - [ ] Test real-time data fetching
+
+2. Set up Basketball Reference Scraper
+   - [ ] Integrate basic API functionality
+   - [ ] Extend API for additional data points:
+     - [ ] Referee information
+     - [ ] Arena and attendance
+     - [ ] Game start time
+     - [ ] Line score (quarter by quarter)
+     - [ ] Four factors stats
+     - [ ] Inactive players list
+     - [ ] Officials
+     - [ ] Pre/post game notes
+     - [ ] Team lineups/rotations
+     - [ ] Timeout usage
+
+3. Data Integration
+   - [ ] Merge data from both sources
+   - [ ] Handle conflicts/validation
+   - [ ] Update database schema for new data
+   - [ ] Create unified data access layer
+
+### Existing Tasks
 1. Enhance Game Statistics
-   - [ ] Add box score parsing
-   - [ ] Add error handling for future dates
-   - [ ] Add game details (venue, attendance, etc.)
    - [ ] Add win/loss record when attending
    - [ ] Calculate points scored/allowed
-   - [ ] Track most opponents seen
+   - [ ] Track favorite/most opponents seen
    - [ ] Show best/worst games attended
 
 2. Database Improvements
@@ -34,6 +58,5 @@
 - [ ] Add photo gallery
 - [ ] Add game highlights/recap links
 - [ ] Add memorable moments tracking
-- [ ] Add search functionality 
-- [ ] Add weather?
+- [ ] Add search functionality
 - [ ] Add chatgpt integration
