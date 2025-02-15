@@ -51,13 +51,27 @@ class Game(Base):
     away_q3 = Column(Integer)
     away_q4 = Column(Integer)
     
-    # Overtime Scores
+    # Overtime Scores (all 10 possible OT periods)
     home_ot1 = Column(Integer)
     home_ot2 = Column(Integer)
     home_ot3 = Column(Integer)
+    home_ot4 = Column(Integer)
+    home_ot5 = Column(Integer)
+    home_ot6 = Column(Integer)
+    home_ot7 = Column(Integer)
+    home_ot8 = Column(Integer)
+    home_ot9 = Column(Integer)
+    home_ot10 = Column(Integer)
     away_ot1 = Column(Integer)
     away_ot2 = Column(Integer)
     away_ot3 = Column(Integer)
+    away_ot4 = Column(Integer)
+    away_ot5 = Column(Integer)
+    away_ot6 = Column(Integer)
+    away_ot7 = Column(Integer)
+    away_ot8 = Column(Integer)
+    away_ot9 = Column(Integer)
+    away_ot10 = Column(Integer)
     
     # Team Stats
     home_paint_points = Column(Integer)

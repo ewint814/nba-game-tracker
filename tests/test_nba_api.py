@@ -3,6 +3,8 @@ import os
 from nba_api.stats.static import teams
 from nba_api.stats.endpoints import scoreboardv2
 from datetime import datetime
+from nba_api.stats.endpoints import boxscoresummaryv2
+from pprint import pprint
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,5 +45,38 @@ def test_nba_api_raw():
     except Exception as e:
         print(f"\nError: {str(e)}")
 
+def test_overtime_structure():
+    """Test to examine the structure of overtime data in the NBA API."""
+    print("\nTesting Overtime Game Structure")
+    
+    try:
+        # Test with known overtime game
+        game_id = "0022400773"
+        
+        # Get detailed box score data
+        box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
+        box_data = box.get_dict()
+        
+        # Get line score data
+        line_score_data = box_data['resultSets'][5]
+        
+        print("\nLine Score Headers:")
+        pprint(line_score_data['headers'])
+        
+        print("\nAway Team Line Score:")
+        pprint(line_score_data['rowSet'][0])
+        
+        print("\nHome Team Line Score:")
+        pprint(line_score_data['rowSet'][1])
+        
+        # Print index positions for reference
+        print("\nIndex positions:")
+        for i, header in enumerate(line_score_data['headers']):
+            print(f"{i}: {header}")
+            
+    except Exception as e:
+        print(f"\nError: {str(e)}")
+
 if __name__ == "__main__":
-    test_nba_api_raw() 
+    test_nba_api_raw()
+    test_overtime_structure() 

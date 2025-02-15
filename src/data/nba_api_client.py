@@ -99,7 +99,8 @@ class NBAApiClient:
             line_score = box_data['resultSets'][5]['rowSet']    # LineScore
             officials = box_data['resultSets'][2]['rowSet']     # Officials
             
-            return {
+            # Initialize the stats dictionary with base data
+            stats = {
                 'attendance': game_info[1],
                 'duration': game_info[2],
                 'officials': ", ".join([f"{off[1]} {off[2]}" for off in officials]),
@@ -125,6 +126,18 @@ class NBAApiClient:
                 'away_largest_lead': team_stats[0][7]
             }
             
+            # Add overtime periods if they exist
+            for ot in range(1, 11):  # Check all possible OT periods
+                ot_index = 11 + ot  # OT1 starts at index 12
+                home_score = line_score[1][ot_index]
+                away_score = line_score[0][ot_index]
+                
+                if home_score > 0 or away_score > 0:  # If either team scored in this OT
+                    stats[f'home_ot{ot}'] = home_score
+                    stats[f'away_ot{ot}'] = away_score
+            
+            return stats
+            
         except Exception as e:
             print(f"Error getting detailed stats for game {game_id}: {str(e)}")
             raise
@@ -135,7 +148,7 @@ if __name__ == "__main__":
     client = NBAApiClient()
     
     # Test with a specific date
-    test_date = "2024-02-13"
+    test_date = "2025-02-12"
     print(f"\nGetting games for {test_date}:")
     
     try:
