@@ -1,7 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, Float, ForeignKey, Text, Time, Enum, CheckConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Date, Float, ForeignKey, Text, Time, Enum, CheckConstraint, Interval
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 import enum
+from src.utils.game_calculations import format_season
+from datetime import timedelta, time
 
 Base = declarative_base()
 
@@ -34,7 +36,7 @@ class Game(Base):
     home_score = Column(Integer, CheckConstraint('home_score >= 0'))
     away_score = Column(Integer, CheckConstraint('away_score >= 0'))
     arena = Column(String(100), nullable=False)
-    game_id = Column(String(10), unique=True, nullable=False)
+    game_id = Column(String(20), unique=True, nullable=False)
     
     # Team Info
     home_team_id = Column(Integer, nullable=False)
@@ -43,9 +45,9 @@ class Game(Base):
     away_team_abbrev = Column(String(3), nullable=False)
     
     # Basic Game Info
-    season = Column(String(7), nullable=False)
+    season = Column(String(9), nullable=False)
     attendance = Column(Integer, CheckConstraint('attendance >= 0'))
-    duration = Column(String(20))
+    duration_minutes = Column(Integer, CheckConstraint('duration_minutes >= 0'))  # Total game duration in minutes
     national_tv = Column(String(10))
     
     # Team Records
@@ -149,6 +151,25 @@ class Game(Base):
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
+
+    @validates('season')
+    def validate_season(self, key, season):
+        """Ensure season is in YYYY-YYYY format"""
+        if '-' not in season:
+            # If just given a year, convert to full format
+            return format_season(season)
+        return season
+
+    @validates('duration_minutes')
+    def validate_duration(self, key, duration_str):
+        """Convert HH:MM format to total minutes"""
+        if isinstance(duration_str, str):
+            try:
+                hours, minutes = map(int, duration_str.split(':'))
+                return (hours * 60) + minutes
+            except:
+                return None
+        return duration_str
 
 class Photo(Base):
     """

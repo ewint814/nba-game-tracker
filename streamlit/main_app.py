@@ -6,6 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import json
+import time
+import gc
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,6 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
 from src.data.database_models import Game, Photo, Base
 from src.data.nba_api_client import NBAApiClient
+from src.utils.game_calculations import format_season
 
 # Initialize database connection
 engine = create_engine('sqlite:///basketball_tracker.db')
@@ -27,15 +30,35 @@ def recreate_database():
     Only for development use to handle schema changes.
     """
     try:
+        # Close all sessions and connections
+        Session.close_all()
+        engine.dispose()
+        
+        # Sleep briefly to ensure connections are closed
+        time.sleep(1)
+        
+        # Force Python garbage collection
+        gc.collect()
+        
         # Remove existing database
         if os.path.exists('basketball_tracker.db'):
-            os.remove('basketball_tracker.db')
-            st.success("Existing database removed")
+            try:
+                os.remove('basketball_tracker.db')
+                st.success("Existing database removed")
+            except PermissionError:
+                st.error("Could not remove database - please close any other applications using it")
+                return
+            except Exception as e:
+                st.error(f"Error removing database: {str(e)}")
+                return
         
         # Create new database with current schema
-        engine = create_engine('sqlite:///basketball_tracker.db')
-        Base.metadata.create_all(engine)
+        new_engine = create_engine('sqlite:///basketball_tracker.db')
+        Base.metadata.create_all(new_engine)
         st.success("New database created with updated schema")
+        
+        # Refresh the page to ensure clean state
+        st.rerun()
         
     except Exception as e:
         st.error(f"Error recreating database: {str(e)}")
@@ -150,7 +173,7 @@ def show_add_game():
                                 game_id=game_data['game_id'],
                                 # Add detailed stats
                                 attendance=detailed_stats['attendance'],
-                                duration=detailed_stats['duration'],
+                                duration_minutes=detailed_stats['duration'],
                                 officials=detailed_stats['officials'],
                                 officials_complete=json.dumps(detailed_stats['officials_complete']),
                                 inactive_players=json.dumps(detailed_stats['inactive_players']),
@@ -173,7 +196,7 @@ def show_add_game():
                                 home_largest_lead=detailed_stats['home_largest_lead'],
                                 away_largest_lead=detailed_stats['away_largest_lead'],
                                 # New fields
-                                season=detailed_stats['season'],
+                                season=format_season(detailed_stats['season'][:4]),
                                 national_tv=detailed_stats['national_tv'],
                                 home_team_id=detailed_stats['home_team_id'],
                                 away_team_id=detailed_stats['visitor_team_id'],
@@ -300,9 +323,7 @@ def show_test_data():
                             st.write("Game Info")
                             st.write(f"Game ID: {game['game_id']}")
                             st.write(f"Arena: {game['arena']}")
-                            season_start = detailed['season'][:4]
-                            season_end = str(int(season_start) + 1)  # Add 1 to get the next year
-                            st.write(f"Season: {season_start}-{season_end}")
+                            st.write(f"Season: {format_season(detailed['season'][:4])}")
                             if detailed['national_tv']:
                                 st.write(f"National TV: {detailed['national_tv']}")
                             st.write(f"Attendance: {detailed['attendance']:,}")
@@ -420,11 +441,6 @@ def show_test_data():
         except Exception as e:
             st.error(f"Error fetching data: {str(e)}")
 
-def format_season(season):
-    """Format season string as YYYY-YYYY."""
-    start_year = season[:4]
-    return f"{start_year}-{int(start_year) + 1}"
-
 def show_database_preview():
     """Show a preview of the database structure and contents."""
     st.header("Database Preview")
@@ -433,19 +449,6 @@ def show_database_preview():
     try:
         # Get the most recent 20 games
         games = session.query(Game).order_by(Game.date.desc()).limit(20).all()
-        
-        # Convert games to list of dicts first
-        games_data = []
-        for game in games:
-            game_dict = {
-                column.name: getattr(game, column.name)
-                for column in Game.__table__.columns
-                if not column.name.startswith('_')
-            }
-            games_data.append(game_dict)
-        
-        # Create DataFrame first
-        df = pd.DataFrame(games_data)
         
         # Create type row
         type_info = {}
@@ -474,32 +477,33 @@ def show_database_preview():
                 elif 'ENUM' in type_str:
                     type_info[column.name] = "Enum"
                 else:
-                    type_info[column.name] = type_str
+                    type_info[column.name] = str(column.type)
         
-        # Add type row at the top
-        df = pd.concat([pd.DataFrame([type_info]), df], ignore_index=True)
+        # Convert games to list of dicts
+        games_data = []
+        for game in games:
+            game_dict = {
+                column.name: getattr(game, column.name)
+                for column in Game.__table__.columns
+                if not column.name.startswith('_')
+            }
+            games_data.append(game_dict)
+        
+        # Add type example as first row
+        games_data.insert(0, type_info)
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(games_data)
         
         # Display options
         st.subheader("Most Recent Games (with Data Types)")
-        st.dataframe(
-            df,
-            use_container_width=True,
-            column_config={
-                column: st.column_config.Column(
-                    width="medium"
-                ) for column in df.columns
-            }
-        )
+        st.dataframe(df, use_container_width=True)
         
         # Show total column count
         st.info(f"Total number of columns: {len(df.columns)}")
         
     except Exception as e:
         st.error(f"Error loading database preview: {str(e)}")
-        # Debug info
-        st.error("Debug info:")
-        for column in Game.__table__.columns:
-            st.write(f"Column: {column.name}, Type: {str(column.type)}")
     finally:
         session.close()
 
