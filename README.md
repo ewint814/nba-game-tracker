@@ -13,26 +13,28 @@ A personal basketball game tracking application that helps fans document and ana
 
 ### Game Statistics
 - Comprehensive game stats from NBA API:
-  - Game date
-  - Game ID
-  - Team 1 name
-  - Team 2 name
-  - Team 1 score
-  - Team 2 score
-  - Quarter-by-quarter scoring
-  - Team Paint points
-  - Team Second chance points
-  - Team Fast break points
-  - Team largest leads
-  - Game attendance
-  - Game duration
-  - Officials
+  - Game date and basic info (teams, scores, arena)
+  - Season series information (pre and post-game records)
+  - Quarter-by-quarter scoring (including overtime periods)
+  - Detailed team statistics:
+    - Paint points
+    - Second chance points
+    - Fast break points
+    - Team rebounds
+    - Team turnovers
+    - Points off turnovers
+    - Largest leads
+  - Game flow stats (lead changes, times tied)
+  - Game metadata (attendance, duration, national TV)
+  - Officials and inactive players
+  - Last meeting details
 
 ### Interface
 - **Add Game**: Find and save games you've attended
 - **My Games**: View your game history
 - **Statistics**: Analyze your attendance patterns
-- **Test API**: Verify NBA data retrieval
+- **Test API**: Verify NBA data retrieval (development tool)
+- **Database Preview**: View raw database contents (development tool)
 
 ## Project Structure
 

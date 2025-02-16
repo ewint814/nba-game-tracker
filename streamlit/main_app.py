@@ -20,9 +20,35 @@ engine = create_engine('sqlite:///basketball_tracker.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+def recreate_database():
+    """
+    Recreate the database with the latest schema.
+    TODO: Remove this function before moving to production.
+    Only for development use to handle schema changes.
+    """
+    try:
+        # Remove existing database
+        if os.path.exists('basketball_tracker.db'):
+            os.remove('basketball_tracker.db')
+            st.success("Existing database removed")
+        
+        # Create new database with current schema
+        engine = create_engine('sqlite:///basketball_tracker.db')
+        Base.metadata.create_all(engine)
+        st.success("New database created with updated schema")
+        
+    except Exception as e:
+        st.error(f"Error recreating database: {str(e)}")
+
 def main():
     """Main function that sets up the Streamlit app structure."""
     st.title("Basketball Game Tracker")
+    
+    # TODO: Remove this section before production
+    # Development tools
+    if st.sidebar.checkbox("Show Dev Tools"):
+        if st.sidebar.button("Recreate Database"):
+            recreate_database()
     
     # Create sidebar navigation menu
     st.sidebar.title("Navigation")

@@ -6,13 +6,36 @@
 - NBA API integration for getting game data
 - Basic Streamlit interface
 - Game saving functionality
-- Detailed game stats (attendance, duration, officials, quarter scores, team stats)
+- Detailed game stats:
+  - Quarter scores and overtime periods
+  - Team performance metrics
+  - Game flow statistics
+  - Officials and inactive players
+  - Season series tracking (pre and post-game)
 - Test API section with data verification
+- Database preview tool for development
+- Development tools for schema updates
 
 ## Next Steps
 
-### NBA API Integration
-- [ ] Fix overtime period handling in game stats
+### Game Statistics
+1. Advanced Statistics
+   - [ ] Calculate win/loss records:
+     - Overall record when attending
+     - Record by team
+     - Record by seat location
+   - [ ] Series tracking:
+     - Season series progression
+     - Head-to-head records
+   - [ ] Streak tracking:
+     - Winning/losing streaks
+     - Home/away streaks
+
+2. Data Analysis
+   - [ ] Points differential analysis
+   - [ ] Close games vs blowouts
+   - [ ] Overtime game statistics
+   - [ ] Lead changes and comebacks
 
 ### Streamlit Interface
 1. My Games Page Improvements
@@ -39,6 +62,13 @@
    - [ ] Calculate points scored/allowed
    - [ ] Track favorite/most opponents seen
    - [ ] Show best/worst games attended
+
+### Development
+- [ ] Implement proper database migrations for schema changes
+- [ ] Add comprehensive error handling
+- [ ] Improve code documentation
+- [ ] Add unit tests for game calculations
+- [ ] Optimize database queries
 
 ### Future Features
 - [ ] Add photo gallery
