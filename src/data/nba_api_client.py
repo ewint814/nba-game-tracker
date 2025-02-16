@@ -93,17 +93,49 @@ class NBAApiClient:
             box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
             box_data = box.get_dict()
             
-            # Get all the detailed data
-            game_info = box_data['resultSets'][4]['rowSet'][0]  # GameInfo
-            team_stats = box_data['resultSets'][1]['rowSet']    # OtherStats
-            line_score = box_data['resultSets'][5]['rowSet']    # LineScore
-            officials = box_data['resultSets'][2]['rowSet']     # Officials
+            # Get all the detailed data from each result set
+            game_summary = box_data['resultSets'][0]['rowSet'][0]    # GameSummary
+            team_stats = box_data['resultSets'][1]['rowSet']         # OtherStats
+            officials = box_data['resultSets'][2]['rowSet']          # Officials
+            inactive_players = box_data['resultSets'][3]['rowSet']   # InactivePlayers
+            game_info = box_data['resultSets'][4]['rowSet'][0]       # GameInfo
+            line_score = box_data['resultSets'][5]['rowSet']         # LineScore
+            last_meeting = box_data['resultSets'][6]['rowSet'][0]    # LastMeeting
+            season_series = box_data['resultSets'][7]['rowSet'][0]   # SeasonSeries
             
             # Initialize the stats dictionary with base data
             stats = {
+                # Game Summary Data
+                'home_team_id': game_summary[6],
+                'visitor_team_id': game_summary[7],
+                'season': game_summary[8],
+                'national_tv': game_summary[11],
+                
+                # Game Info
                 'attendance': game_info[1],
                 'duration': game_info[2],
-                'officials': ", ".join([f"{off[1]} {off[2]}" for off in officials]),
+                
+                # Team Stats
+                'home_team_abbrev': team_stats[1][2],
+                'away_team_abbrev': team_stats[0][2],
+                'home_paint_points': team_stats[1][4],
+                'away_paint_points': team_stats[0][4],
+                'home_second_chance_points': team_stats[1][5],
+                'away_second_chance_points': team_stats[0][5],
+                'home_fast_break_points': team_stats[1][6],
+                'away_fast_break_points': team_stats[0][6],
+                'home_largest_lead': team_stats[1][7],
+                'away_largest_lead': team_stats[0][7],
+                'lead_changes': team_stats[1][8],
+                'times_tied': team_stats[1][9],
+                'home_team_turnovers': team_stats[1][10],
+                'away_team_turnovers': team_stats[0][10],
+                'home_total_turnovers': team_stats[1][11],
+                'away_total_turnovers': team_stats[0][11],
+                'home_team_rebounds': team_stats[1][12],
+                'away_team_rebounds': team_stats[0][12],
+                'home_points_off_to': team_stats[1][13],
+                'away_points_off_to': team_stats[0][13],
                 
                 # Quarter scores
                 'home_q1': line_score[1][8],
@@ -115,15 +147,57 @@ class NBAApiClient:
                 'away_q3': line_score[0][10],
                 'away_q4': line_score[0][11],
                 
-                # Team stats
-                'home_paint_points': team_stats[1][4],
-                'away_paint_points': team_stats[0][4],
-                'home_second_chance_points': team_stats[1][5],
-                'away_second_chance_points': team_stats[0][5],
-                'home_fast_break_points': team_stats[1][6],
-                'away_fast_break_points': team_stats[0][6],
-                'home_largest_lead': team_stats[1][7],
-                'away_largest_lead': team_stats[0][7]
+                # Team Records
+                'home_team_wins': int(line_score[1][7].split('-')[0]),
+                'home_team_losses': int(line_score[1][7].split('-')[1]),
+                'away_team_wins': int(line_score[0][7].split('-')[0]),
+                'away_team_losses': int(line_score[0][7].split('-')[1]),
+                
+                # Officials with complete info
+                'officials_complete': [
+                    {
+                        'id': official[0],
+                        'first_name': official[1],
+                        'last_name': official[2],
+                        'jersey_num': official[3]
+                    } for official in officials
+                ],
+                
+                # Keep simple officials string for backward compatibility
+                'officials': ", ".join([f"{off[1]} {off[2]}" for off in officials]),
+                
+                # Inactive Players
+                'inactive_players': [
+                    {
+                        'player_id': player[0],
+                        'first_name': player[1],
+                        'last_name': player[2],
+                        'jersey_num': player[3],
+                        'team_id': player[4],
+                        'team_city': player[5],
+                        'team_name': player[6],
+                        'team_abbrev': player[7]
+                    } for player in inactive_players
+                ],
+                
+                # Last Meeting
+                'last_meeting_game_id': last_meeting[0],
+                'last_meeting_game_date': last_meeting[2],
+                'last_meeting_home_team_id': last_meeting[3],
+                'last_meeting_home_city': last_meeting[4],
+                'last_meeting_home_name': last_meeting[5],
+                'last_meeting_home_abbrev': last_meeting[6],
+                'last_meeting_home_points': last_meeting[7],
+                'last_meeting_visitor_team_id': last_meeting[8],
+                'last_meeting_visitor_city': last_meeting[9],
+                'last_meeting_visitor_name': last_meeting[10],
+                'last_meeting_visitor_abbrev': last_meeting[11],
+                'last_meeting_visitor_points': last_meeting[12],
+                
+                # Season Series
+                'home_team_series_wins': season_series[4],
+                'home_team_series_losses': season_series[5],
+                'series_leader': season_series[6]
             }
             
             # Add overtime periods if they exist

@@ -1,15 +1,17 @@
 import sys
 import os
 from nba_api.stats.static import teams
-from nba_api.stats.endpoints import scoreboardv2
+from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2
 from datetime import datetime
-from nba_api.stats.endpoints import boxscoresummaryv2
 from pprint import pprint
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from src.data.nba_api_client import NBAApiClient
+
 def test_nba_api_raw():
+    """Test basic NBA API functionality."""
     print("\nTesting NBA API")
     
     try:
@@ -57,26 +59,60 @@ def test_overtime_structure():
         box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
         box_data = box.get_dict()
         
-        # Get line score data
-        line_score_data = box_data['resultSets'][5]
+        # Print all available result sets
+        print("\nAvailable Result Sets:")
+        for i, result_set in enumerate(box_data['resultSets']):
+            print(f"\nResult Set {i}: {result_set['name']}")
+            print("Headers:")
+            for j, header in enumerate(result_set['headers']):
+                print(f"{j}: {header}")
+            if result_set['rowSet']:
+                print("\nFirst row data:")
+                pprint(result_set['rowSet'][0])
+            
+    except Exception as e:
+        print(f"\nError: {str(e)}")
+
+def test_all_stats_structure():
+    """Test to examine all available stats in each result set."""
+    print("\nExamining All Available Stats")
+    
+    try:
+        # Test with known game
+        game_id = "0022400773"
         
-        print("\nLine Score Headers:")
-        pprint(line_score_data['headers'])
+        # Get detailed box score data
+        box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
+        box_data = box.get_dict()
         
-        print("\nAway Team Line Score:")
-        pprint(line_score_data['rowSet'][0])
-        
-        print("\nHome Team Line Score:")
-        pprint(line_score_data['rowSet'][1])
-        
-        # Print index positions for reference
-        print("\nIndex positions:")
-        for i, header in enumerate(line_score_data['headers']):
-            print(f"{i}: {header}")
+        # Print all available result sets with detailed structure
+        for i, result_set in enumerate(box_data['resultSets']):
+            print(f"\n{'='*50}")
+            print(f"Result Set {i}: {result_set['name']}")
+            print(f"{'='*50}")
+            
+            # Print headers with indices
+            print("\nHeaders:")
+            headers = result_set['headers']
+            for j, header in enumerate(headers):
+                print(f"{j}: {header}")
+            
+            # Print first row of data with header labels
+            if result_set['rowSet']:
+                print("\nFirst Row Data:")
+                row = result_set['rowSet'][0]
+                for j, value in enumerate(row):
+                    print(f"{headers[j]}: {value}")
+            else:
+                print("\nNo data in this result set")
+            
+            # Print number of rows
+            print(f"\nTotal rows in this set: {len(result_set['rowSet'])}")
             
     except Exception as e:
         print(f"\nError: {str(e)}")
 
 if __name__ == "__main__":
-    test_nba_api_raw()
-    test_overtime_structure() 
+    # test_nba_api_raw()
+    # test_overtime_structure()
+    test_all_stats_structure() 

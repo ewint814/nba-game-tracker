@@ -29,19 +29,44 @@ class Game(Base):
     arena = Column(String)
     game_id = Column(String)
     
-    # Personal Details
-    seat_section = Column(String(20))
-    seat_row = Column(String(10))
-    seat_number = Column(String(10))
-    attended_with = Column(String(200))
-    notes = Column(Text)
+    # Team Info
+    home_team_id = Column(Integer)
+    away_team_id = Column(Integer)
+    home_team_abbrev = Column(String)
+    away_team_abbrev = Column(String)
     
-    # Detailed Game Stats
+    # Basic Game Info
+    season = Column(String)
     attendance = Column(Integer)
     duration = Column(String(20))
-    officials = Column(String(200))
+    national_tv = Column(String)
     
-    # Quarter Scores
+    # Team Records
+    home_team_wins = Column(Integer)
+    home_team_losses = Column(Integer)
+    away_team_wins = Column(Integer)
+    away_team_losses = Column(Integer)
+    
+    # Season Series
+    home_team_series_wins = Column(Integer)
+    home_team_series_losses = Column(Integer)
+    series_leader = Column(String)
+    
+    # Last Meeting
+    last_meeting_game_id = Column(String)
+    last_meeting_game_date = Column(String)
+    last_meeting_home_team_id = Column(Integer)
+    last_meeting_home_city = Column(String)
+    last_meeting_home_name = Column(String)
+    last_meeting_home_abbrev = Column(String)
+    last_meeting_home_points = Column(Integer)
+    last_meeting_visitor_team_id = Column(Integer)
+    last_meeting_visitor_city = Column(String)
+    last_meeting_visitor_name = Column(String)
+    last_meeting_visitor_abbrev = Column(String)
+    last_meeting_visitor_points = Column(Integer)
+    
+    # Game Stats
     home_q1 = Column(Integer)
     home_q2 = Column(Integer)
     home_q3 = Column(Integer)
@@ -51,7 +76,7 @@ class Game(Base):
     away_q3 = Column(Integer)
     away_q4 = Column(Integer)
     
-    # Overtime Scores (all 10 possible OT periods)
+    # Overtime periods (up to 10)
     home_ot1 = Column(Integer)
     home_ot2 = Column(Integer)
     home_ot3 = Column(Integer)
@@ -82,9 +107,30 @@ class Game(Base):
     away_fast_break_points = Column(Integer)
     home_largest_lead = Column(Integer)
     away_largest_lead = Column(Integer)
+    home_team_turnovers = Column(Integer)
+    away_team_turnovers = Column(Integer)
+    home_total_turnovers = Column(Integer)
+    away_total_turnovers = Column(Integer)
+    home_team_rebounds = Column(Integer)
+    away_team_rebounds = Column(Integer)
+    home_points_off_to = Column(Integer)
+    away_points_off_to = Column(Integer)
+    lead_changes = Column(Integer)
+    times_tied = Column(Integer)
+    
+    # Game Details
+    officials = Column(String)  # Stored as JSON string
+    officials_complete = Column(String)  # Stored as JSON string
+    inactive_players = Column(String)  # Stored as JSON string
+    
+    # User Input
+    seat_section = Column(String(20))
+    seat_row = Column(String(10))
+    seat_number = Column(String(10))
+    attended_with = Column(String(200))
+    notes = Column(Text)
     
     # Relationship to photos - allows multiple photos per game
-    # Access using game.photos to get all photos for a game
     photos = relationship("Photo", back_populates="game")
 
 class Photo(Base):
@@ -103,7 +149,6 @@ class Photo(Base):
     caption = Column(Text)                             # Optional photo description
     
     # Relationship back to the game
-    # Access using photo.game to get the associated game
     game = relationship("Game", back_populates="photos")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):

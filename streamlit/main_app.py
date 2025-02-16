@@ -5,6 +5,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
+import json
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -123,6 +124,8 @@ def show_add_game():
                                 attendance=detailed_stats['attendance'],
                                 duration=detailed_stats['duration'],
                                 officials=detailed_stats['officials'],
+                                officials_complete=json.dumps(detailed_stats['officials_complete']),
+                                inactive_players=json.dumps(detailed_stats['inactive_players']),
                                 # Quarter scores
                                 home_q1=detailed_stats['home_q1'],
                                 home_q2=detailed_stats['home_q2'],
@@ -140,7 +143,43 @@ def show_add_game():
                                 home_fast_break_points=detailed_stats['home_fast_break_points'],
                                 away_fast_break_points=detailed_stats['away_fast_break_points'],
                                 home_largest_lead=detailed_stats['home_largest_lead'],
-                                away_largest_lead=detailed_stats['away_largest_lead']
+                                away_largest_lead=detailed_stats['away_largest_lead'],
+                                # New fields
+                                season=detailed_stats['season'],
+                                national_tv=detailed_stats['national_tv'],
+                                home_team_id=detailed_stats['home_team_id'],
+                                away_team_id=detailed_stats['visitor_team_id'],
+                                home_team_abbrev=detailed_stats['home_team_abbrev'],
+                                away_team_abbrev=detailed_stats['away_team_abbrev'],
+                                home_team_wins=detailed_stats['home_team_wins'],
+                                home_team_losses=detailed_stats['home_team_losses'],
+                                away_team_wins=detailed_stats['away_team_wins'],
+                                away_team_losses=detailed_stats['away_team_losses'],
+                                home_team_series_wins=detailed_stats['home_team_series_wins'],
+                                home_team_series_losses=detailed_stats['home_team_series_losses'],
+                                series_leader=detailed_stats['series_leader'],
+                                last_meeting_game_id=detailed_stats['last_meeting_game_id'],
+                                last_meeting_game_date=detailed_stats['last_meeting_game_date'],
+                                last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],
+                                last_meeting_home_city=detailed_stats['last_meeting_home_city'],
+                                last_meeting_home_name=detailed_stats['last_meeting_home_name'],
+                                last_meeting_home_abbrev=detailed_stats['last_meeting_home_abbrev'],
+                                last_meeting_home_points=detailed_stats['last_meeting_home_points'],
+                                last_meeting_visitor_team_id=detailed_stats['last_meeting_visitor_team_id'],
+                                last_meeting_visitor_city=detailed_stats['last_meeting_visitor_city'],
+                                last_meeting_visitor_name=detailed_stats['last_meeting_visitor_name'],
+                                last_meeting_visitor_abbrev=detailed_stats['last_meeting_visitor_abbrev'],
+                                last_meeting_visitor_points=detailed_stats['last_meeting_visitor_points'],
+                                home_team_turnovers=detailed_stats['home_team_turnovers'],
+                                away_team_turnovers=detailed_stats['away_team_turnovers'],
+                                home_total_turnovers=detailed_stats['home_total_turnovers'],
+                                away_total_turnovers=detailed_stats['away_total_turnovers'],
+                                home_team_rebounds=detailed_stats['home_team_rebounds'],
+                                away_team_rebounds=detailed_stats['away_team_rebounds'],
+                                home_points_off_to=detailed_stats['home_points_off_to'],
+                                away_points_off_to=detailed_stats['away_points_off_to'],
+                                lead_changes=detailed_stats['lead_changes'],
+                                times_tied=detailed_stats['times_tied']
                             )
 
                             # Add overtime periods if they exist
@@ -203,7 +242,6 @@ def show_test_data():
     """Test NBA API data retrieval and database storage."""
     st.header("Test NBA API")
     
-    # Add tabs for different test views
     tab1, tab2 = st.tabs(["Test API Calls", "View Saved Test Data"])
     
     with tab1:
@@ -226,154 +264,266 @@ def show_test_data():
                     
                     for game in games:
                         st.subheader(f"{game['away_team']} ({game['away_score']}) @ {game['home_team']} ({game['home_score']})")
-                        st.caption(f"Game ID: {game['game_id']}")
-                        st.write(f"Arena: {game['arena']}")
                         
                         try:
-                            detailed_stats = client.get_detailed_stats(game['game_id'])
+                            detailed = client.get_detailed_stats(game['game_id'])
                             
-                            # Create quarters list and scores
+                            # Create three columns for layout
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                st.write("Game Info")
+                                st.write(f"Game ID: {game['game_id']}")
+                                st.write(f"Arena: {game['arena']}")
+                                season_start = detailed['season'][:4]
+                                season_end = str(int(season_start) + 1)  # Add 1 to get the next year
+                                st.write(f"Season: {season_start}-{season_end}")
+                                if detailed['national_tv']:
+                                    st.write(f"National TV: {detailed['national_tv']}")
+                                st.write(f"Attendance: {detailed['attendance']:,}")
+                                st.write(f"Duration: {detailed['duration']}")
+                                
+                                st.write("\nTeam Records")
+                                st.write(f"{game['home_team']}: {detailed['home_team_wins']}-{detailed['home_team_losses']}")
+                                st.write(f"{game['away_team']}: {detailed['away_team_wins']}-{detailed['away_team_losses']}")
+                                
+                                st.write("\nSeason Series")
+                                st.write(f"Series Record: {detailed['home_team_series_wins']}-{detailed['home_team_series_losses']}")
+                                if detailed['series_leader']:
+                                    leader_name = detailed['series_leader']
+                                    if leader_name == detailed['home_team_abbrev']:
+                                        leader_name = game['home_team']
+                                    elif leader_name == detailed['away_team_abbrev']:
+                                        leader_name = game['away_team']
+                                    st.write(f"Series Leader: {leader_name}")
+                            
+                            with col2:
+                                st.write("Last Meeting")
+                                last_meeting_date = datetime.strptime(detailed['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S')
+                                st.write(f"Date: {last_meeting_date.strftime('%Y-%m-%d')}")
+                                st.write(f"{detailed['last_meeting_visitor_city']} {detailed['last_meeting_visitor_name']} ({detailed['last_meeting_visitor_points']})")
+                                st.write(f"{detailed['last_meeting_home_city']} {detailed['last_meeting_home_name']} ({detailed['last_meeting_home_points']})")
+                            
+                            # Display quarter scores in a DataFrame
+                            st.write("\nQuarter Scores")
                             quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-                            home_scores = [
-                                detailed_stats['home_q1'],
-                                detailed_stats['home_q2'],
-                                detailed_stats['home_q3'],
-                                detailed_stats['home_q4']
-                            ]
-                            away_scores = [
-                                detailed_stats['away_q1'],
-                                detailed_stats['away_q2'],
-                                detailed_stats['away_q3'],
-                                detailed_stats['away_q4']
-                            ]
+                            home_scores = [detailed[f'home_q{i}'] for i in range(1, 5)]
+                            away_scores = [detailed[f'away_q{i}'] for i in range(1, 5)]
                             
                             # Add overtime periods if they exist
-                            for ot in range(1, 11):
-                                ot_key = f'home_ot{ot}'
-                                if ot_key in detailed_stats:
-                                    quarters.append(f'OT{ot}')
-                                    home_scores.append(detailed_stats[f'home_ot{ot}'])
-                                    away_scores.append(detailed_stats[f'away_ot{ot}'])
+                            ot = 1
+                            while f'home_ot{ot}' in detailed:
+                                quarters.append(f'OT{ot}')
+                                home_scores.append(detailed[f'home_ot{ot}'])
+                                away_scores.append(detailed[f'away_ot{ot}'])
+                                ot += 1
                             
                             # Add final score
                             quarters.append('Final')
                             home_scores.append(game['home_score'])
                             away_scores.append(game['away_score'])
                             
-                            # Create and display score DataFrame
                             score_df = pd.DataFrame({
                                 'Team': [game['home_team'], game['away_team']],
                                 **{q: [h, a] for q, h, a in zip(quarters, home_scores, away_scores)}
                             })
                             st.dataframe(score_df, hide_index=True)
                             
-                            # Display other stats
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.write("Game Info:")
-                                st.write(f"Attendance: {detailed_stats['attendance']:,}")
-                                st.write(f"Duration: {detailed_stats['duration']}")
-                                st.write(f"Officials: {detailed_stats['officials']}")
+                            # Display team stats in a DataFrame
+                            st.write("\nTeam Stats")
+                            stats_df = pd.DataFrame({
+                                'Stat': [
+                                    'Points in Paint', 'Second Chance Points', 
+                                    'Fast Break Points', 'Largest Lead',
+                                    'Team Turnovers', 'Total Turnovers',
+                                    'Team Rebounds', 'Points off Turnovers'
+                                ],
+                                game['home_team']: [
+                                    detailed['home_paint_points'],
+                                    detailed['home_second_chance_points'],
+                                    detailed['home_fast_break_points'],
+                                    detailed['home_largest_lead'],
+                                    detailed['home_team_turnovers'],
+                                    detailed['home_total_turnovers'],
+                                    detailed['home_team_rebounds'],
+                                    detailed['home_points_off_to']
+                                ],
+                                game['away_team']: [
+                                    detailed['away_paint_points'],
+                                    detailed['away_second_chance_points'],
+                                    detailed['away_fast_break_points'],
+                                    detailed['away_largest_lead'],
+                                    detailed['away_team_turnovers'],
+                                    detailed['away_total_turnovers'],
+                                    detailed['away_team_rebounds'],
+                                    detailed['away_points_off_to']
+                                ]
+                            })
+                            st.dataframe(stats_df, hide_index=True)
                             
-                            with col2:
-                                st.write("Team Stats:")
-                                stats_df = pd.DataFrame({
-                                    'Stat': ['Paint Points', 'Second Chance Points', 'Fast Break Points', 'Largest Lead'],
-                                    game['home_team']: [
-                                        detailed_stats['home_paint_points'],
-                                        detailed_stats['home_second_chance_points'],
-                                        detailed_stats['home_fast_break_points'],
-                                        detailed_stats['home_largest_lead']
-                                    ],
-                                    game['away_team']: [
-                                        detailed_stats['away_paint_points'],
-                                        detailed_stats['away_second_chance_points'],
-                                        detailed_stats['away_fast_break_points'],
-                                        detailed_stats['away_largest_lead']
-                                    ]
-                                })
-                                st.dataframe(stats_df, hide_index=True)
+                            # Display game flow stats
+                            st.write("\nGame Flow")
+                            st.write(f"Lead Changes: {detailed['lead_changes']}")
+                            st.write(f"Times Tied: {detailed['times_tied']}")
+                            
+                            # Display officials
+                            st.write("\nOfficials")
+                            for official in detailed['officials_complete']:
+                                st.write(f"{official['first_name']} {official['last_name']} (#{official['jersey_num'].strip()})")
+                            
+                            # Display inactive players
+                            st.write("\nInactive Players")
+                            for player in detailed['inactive_players']:
+                                st.write(f"{player['first_name']} {player['last_name']} (#{player['jersey_num'].strip()}) - {player['team_abbrev']}")
+                            
+                            st.markdown("---")  # Add a divider between games
                             
                         except Exception as e:
                             st.error(f"Error getting detailed stats: {str(e)}")
-                        
-                        st.markdown("---")
                     
             except Exception as e:
                 st.error(f"Error fetching data: {str(e)}")
     
     with tab2:
-        st.subheader("Games in Database")
-        session = Session()
-        try:
-            games = session.query(Game).order_by(Game.date.desc()).all()
+        show_saved_test_data()
+
+def format_season(season):
+    """Format season string as YYYY-YYYY."""
+    start_year = season[:4]
+    return f"{start_year}-{int(start_year) + 1}"
+
+def show_saved_test_data():
+    """Display saved test data from database."""
+    st.subheader("Games in Database")
+    session = Session()
+    try:
+        games = session.query(Game).order_by(Game.date.desc()).all()
+        
+        if not games:
+            st.info("No games found in database")
+        else:
+            st.success(f"Found {len(games)} games!")
             
-            if not games:
-                st.info("No games found in database")
-            else:
-                st.success(f"Found {len(games)} games!")
-                
-                for game in games:
-                    with st.expander(f"{game.date.strftime('%Y-%m-%d')}: {game.away_team} @ {game.home_team}"):
-                        st.caption(f"Game ID: {game.game_id}")
+            for game in games:
+                with st.expander(f"{game.date.strftime('%Y-%m-%d')}: {game.away_team} @ {game.home_team}"):
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write("Game Info")
+                        st.write(f"Game ID: {game.game_id}")
+                        st.write(f"Arena: {game.arena}")
+                        st.write(f"Season: {format_season(game.season)}")
+                        if game.national_tv:
+                            st.write(f"National TV: {game.national_tv}")
+                        st.write(f"Attendance: {game.attendance:,}")
+                        st.write(f"Duration: {game.duration}")
                         
-                        # Create quarters list and scores
-                        quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-                        home_scores = [game.home_q1, game.home_q2, game.home_q3, game.home_q4]
-                        away_scores = [game.away_q1, game.away_q2, game.away_q3, game.away_q4]
+                        st.write("\nTeam Records")
+                        st.write(f"{game.home_team}: {game.home_team_wins}-{game.home_team_losses}")
+                        st.write(f"{game.away_team}: {game.away_team_wins}-{game.away_team_losses}")
                         
-                        # Add overtime periods if they exist
-                        for ot in range(1, 11):
-                            home_ot = getattr(game, f'home_ot{ot}')
-                            away_ot = getattr(game, f'away_ot{ot}')
-                            if home_ot is not None and away_ot is not None and (home_ot > 0 or away_ot > 0):
-                                quarters.append(f'OT{ot}')
-                                home_scores.append(home_ot)
-                                away_scores.append(away_ot)
-                        
-                        # Add final score
-                        quarters.append('Final')
-                        home_scores.append(game.home_score)
-                        away_scores.append(game.away_score)
-                        
-                        # Create and display score DataFrame
-                        score_df = pd.DataFrame({
-                            'Team': [game.home_team, game.away_team],
-                            **{q: [h, a] for q, h, a in zip(quarters, home_scores, away_scores)}
-                        })
-                        st.dataframe(score_df, hide_index=True)
-                        
-                        # Display other game info
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.write("Game Info:")
-                            st.write(f"Attendance: {game.attendance:,}")
-                            st.write(f"Duration: {game.duration}")
-                            st.write(f"Officials: {game.officials}")
-                        
-                        with col2:
-                            st.write("Team Stats:")
-                            stats_df = pd.DataFrame({
-                                'Stat': ['Paint Points', 'Second Chance Points', 'Fast Break Points', 'Largest Lead'],
-                                game.home_team: [
-                                    game.home_paint_points,
-                                    game.home_second_chance_points,
-                                    game.home_fast_break_points,
-                                    game.home_largest_lead
-                                ],
-                                game.away_team: [
-                                    game.away_paint_points,
-                                    game.away_second_chance_points,
-                                    game.away_fast_break_points,
-                                    game.away_largest_lead
-                                ]
-                            })
-                            st.dataframe(stats_df, hide_index=True)
-                        
-        except Exception as e:
-            st.error(f"Error loading games: {str(e)}")
-        finally:
-            session.close()
+                        st.write("\nSeason Series")
+                        st.write(f"Series Record: {game.home_team_series_wins}-{game.home_team_series_losses}")
+                        if game.series_leader:
+                            leader_name = game.series_leader
+                            if leader_name == game.home_team_abbrev:
+                                leader_name = game.home_team
+                            elif leader_name == game.away_team_abbrev:
+                                leader_name = game.away_team
+                            st.write(f"Series Leader: {leader_name}")
+                    
+                    with col2:
+                        st.write("Last Meeting")
+                        last_meeting_date = datetime.strptime(game.last_meeting_game_date, '%Y-%m-%dT%H:%M:%S')
+                        st.write(f"Date: {last_meeting_date.strftime('%Y-%m-%d')}")
+                        st.write(f"{game.last_meeting_visitor_city} {game.last_meeting_visitor_name} ({game.last_meeting_visitor_points})")
+                        st.write(f"{game.last_meeting_home_city} {game.last_meeting_home_name} ({game.last_meeting_home_points})")
+                    
+                    # Display quarter scores
+                    st.write("\nQuarter Scores")
+                    quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+                    home_scores = [game.home_q1, game.home_q2, game.home_q3, game.home_q4]
+                    away_scores = [game.away_q1, game.away_q2, game.away_q3, game.away_q4]
+                    
+                    # Add overtime periods if they exist
+                    for ot in range(1, 11):  # Check up to 10 OT periods
+                        home_ot = getattr(game, f'home_ot{ot}')
+                        away_ot = getattr(game, f'away_ot{ot}')
+                        if home_ot is not None and away_ot is not None:
+                            quarters.append(f'OT{ot}')
+                            home_scores.append(home_ot)
+                            away_scores.append(away_ot)
+                    
+                    # Add final score
+                    quarters.append('Final')
+                    home_scores.append(game.home_score)
+                    away_scores.append(game.away_score)
+                    
+                    score_df = pd.DataFrame({
+                        'Team': [game.home_team, game.away_team],
+                        **{q: [h, a] for q, h, a in zip(quarters, home_scores, away_scores)}
+                    })
+                    st.dataframe(score_df, hide_index=True)
+                    
+                    # Display team stats
+                    st.write("\nTeam Stats")
+                    stats_df = pd.DataFrame({
+                        'Stat': [
+                            'Points in Paint', 'Second Chance Points', 
+                            'Fast Break Points', 'Largest Lead',
+                            'Team Turnovers', 'Total Turnovers',
+                            'Team Rebounds', 'Points off Turnovers'
+                        ],
+                        game.home_team: [
+                            game.home_paint_points,
+                            game.home_second_chance_points,
+                            game.home_fast_break_points,
+                            game.home_largest_lead,
+                            game.home_team_turnovers,
+                            game.home_total_turnovers,
+                            game.home_team_rebounds,
+                            game.home_points_off_to
+                        ],
+                        game.away_team: [
+                            game.away_paint_points,
+                            game.away_second_chance_points,
+                            game.away_fast_break_points,
+                            game.away_largest_lead,
+                            game.away_team_turnovers,
+                            game.away_total_turnovers,
+                            game.away_team_rebounds,
+                            game.away_points_off_to
+                        ]
+                    })
+                    st.dataframe(stats_df, hide_index=True)
+                    
+                    # Display game flow stats
+                    st.write("\nGame Flow")
+                    st.write(f"Lead Changes: {game.lead_changes}")
+                    st.write(f"Times Tied: {game.times_tied}")
+                    
+                    # Display officials
+                    st.write("\nOfficials")
+                    if game.officials_complete:
+                        officials = json.loads(game.officials_complete)
+                        for official in officials:
+                            st.write(f"{official['first_name']} {official['last_name']} (#{official['jersey_num'].strip()})")
+                    else:
+                        st.write("No officials data available")
+                    
+                    # Display inactive players
+                    st.write("\nInactive Players")
+                    if game.inactive_players:
+                        inactive = json.loads(game.inactive_players)
+                        for player in inactive:
+                            st.write(f"{player['first_name']} {player['last_name']} (#{player['jersey_num'].strip()}) - {player['team_abbrev']}")
+                    else:
+                        st.write("No inactive players data available")
+                    
+    except Exception as e:
+        st.error(f"Error loading games: {str(e)}")
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     main()

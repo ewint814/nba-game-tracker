@@ -13,10 +13,16 @@ A personal basketball game tracking application that helps fans document and ana
 
 ### Game Statistics
 - Comprehensive game stats from NBA API:
+  - Game date
+  - Game ID
+  - Team 1 name
+  - Team 2 name
+  - Team 1 score
+  - Team 2 score
   - Quarter-by-quarter scoring
-  - Paint points
-  - Second chance points
-  - Fast break points
+  - Team Paint points
+  - Team Second chance points
+  - Team Fast break points
   - Team largest leads
   - Game attendance
   - Game duration
