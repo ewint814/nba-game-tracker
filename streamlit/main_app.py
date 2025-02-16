@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
 from src.data.database_models import Game, Photo, Base
 from src.data.nba_api_client import NBAApiClient
-from src.utils.game_calculations import format_season
+from src.utils.game_calculations import format_season, calculate_series_stats
 
 # Initialize database connection
 engine = create_engine('sqlite:///basketball_tracker.db')
@@ -154,6 +154,17 @@ def show_add_game():
                         with st.spinner("Getting detailed game stats..."):
                             detailed_stats = client.get_detailed_stats(game_data['game_id'])
                             
+                        # Calculate pre-game series data
+                        series_data = calculate_series_stats(
+                            home_score=game_data['home_score'],
+                            away_score=game_data['away_score'],
+                            postgame_home_wins=detailed_stats['home_team_series_wins'],
+                            postgame_home_losses=detailed_stats['home_team_series_losses'],
+                            postgame_leader=detailed_stats['series_leader'],
+                            home_team_abbrev=detailed_stats['home_team_abbrev'],
+                            away_team_abbrev=detailed_stats['away_team_abbrev']
+                        )
+                        
                         # Create new game in database
                         session = Session()
                         try:
@@ -206,9 +217,16 @@ def show_add_game():
                                 home_team_losses=detailed_stats['home_team_losses'],
                                 away_team_wins=detailed_stats['away_team_wins'],
                                 away_team_losses=detailed_stats['away_team_losses'],
+                                # Series data (post-game)
                                 home_team_series_wins=detailed_stats['home_team_series_wins'],
                                 home_team_series_losses=detailed_stats['home_team_series_losses'],
                                 series_leader=detailed_stats['series_leader'],
+                                # Series data (pre-game) - Using calculated series_data
+                                pregame_home_team_series_wins=series_data['pregame_home_wins'],
+                                pregame_home_team_series_losses=series_data['pregame_home_losses'],
+                                pregame_series_leader=series_data['pregame_leader'],
+                                pregame_series_record=series_data['pregame_series_record'],
+                                # Last meeting data
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
                                 last_meeting_game_date=detailed_stats['last_meeting_game_date'],
                                 last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],

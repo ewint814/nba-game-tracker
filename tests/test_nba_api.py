@@ -9,6 +9,7 @@ from pprint import pprint
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.data.nba_api_client import NBAApiClient
+from src.utils.game_calculations import calculate_series_stats
 
 def test_nba_api_raw():
     """Test basic NBA API functionality."""
@@ -73,46 +74,129 @@ def test_overtime_structure():
     except Exception as e:
         print(f"\nError: {str(e)}")
 
-def test_all_stats_structure():
-    """Test to examine all available stats in each result set."""
-    print("\nExamining All Available Stats")
+def test_series_data_structure():
+    """Test to examine the season series data structure."""
+    print("\nExamining Season Series Data")
     
     try:
         # Test with known game
-        game_id = "0022400773"
+        game_id = "0022400773"  # The game we were testing with
         
         # Get detailed box score data
         box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
         box_data = box.get_dict()
         
-        # Print all available result sets with detailed structure
-        for i, result_set in enumerate(box_data['resultSets']):
-            print(f"\n{'='*50}")
-            print(f"Result Set {i}: {result_set['name']}")
-            print(f"{'='*50}")
-            
-            # Print headers with indices
-            print("\nHeaders:")
-            headers = result_set['headers']
-            for j, header in enumerate(headers):
-                print(f"{j}: {header}")
-            
-            # Print first row of data with header labels
-            if result_set['rowSet']:
-                print("\nFirst Row Data:")
-                row = result_set['rowSet'][0]
-                for j, value in enumerate(row):
-                    print(f"{headers[j]}: {value}")
-            else:
-                print("\nNo data in this result set")
-            
-            # Print number of rows
-            print(f"\nTotal rows in this set: {len(result_set['rowSet'])}")
+        # Find the SeasonSeries result set
+        for result_set in box_data['resultSets']:
+            if result_set['name'] == 'SeasonSeries':
+                print("\nSeason Series Data Structure:")
+                print("=" * 50)
+                
+                # Print headers with indices
+                print("\nHeaders:")
+                headers = result_set['headers']
+                for i, header in enumerate(headers):
+                    print(f"{i}: {header}")
+                
+                # Print all rows of data
+                print("\nAll Series Data Rows:")
+                for row in result_set['rowSet']:
+                    print("\nRow Data:")
+                    for i, value in enumerate(row):
+                        print(f"{headers[i]}: {value}")
+                
+                # Print raw data for debugging
+                print("\nRaw Data:")
+                pprint(result_set['rowSet'])
+                
+                break
+        else:
+            print("No SeasonSeries data found!")
             
     except Exception as e:
         print(f"\nError: {str(e)}")
 
+def test_series_calculation():
+    """Test the series calculation logic with different scenarios."""
+    print("\nTesting Series Calculations")
+    print("=" * 50)
+    
+    # Test Case 1: Home team wins, updating 2-2 series
+    print("\nTest Case 1: Home team wins (2-2 → 1-2)")
+    print("-" * 30)
+    home_score = 149
+    away_score = 148
+    postgame_wins = 2
+    postgame_losses = 2
+    postgame_leader = "Tied"
+    home_team = "NYK"
+    away_team = "ATL"
+    
+    result = calculate_series_stats(
+        home_score=home_score,
+        away_score=away_score,
+        postgame_home_wins=postgame_wins,
+        postgame_home_losses=postgame_losses,
+        postgame_leader=postgame_leader,
+        home_team_abbrev=home_team,
+        away_team_abbrev=away_team
+    )
+    
+    print(f"Input:")
+    print(f"• Scores: {home_team} {home_score} - {away_team} {away_score}")
+    print(f"• Post-game series: {postgame_wins}-{postgame_losses} ({postgame_leader})")
+    print("\nOutput:")
+    print(f"• Pre-game series: {result['pregame_series_record']}")
+    print(f"• Pre-game leader: {result['pregame_leader']}")
+    
+    # Test Case 2: Away team wins, updating 1-1 series
+    print("\nTest Case 2: Away team wins (1-1 → 1-0)")
+    print("-" * 30)
+    home_score = 110
+    away_score = 120
+    postgame_wins = 1
+    postgame_losses = 1
+    postgame_leader = "Tied"
+    
+    result = calculate_series_stats(
+        home_score=home_score,
+        away_score=away_score,
+        postgame_home_wins=postgame_wins,
+        postgame_home_losses=postgame_losses,
+        postgame_leader=postgame_leader,
+        home_team_abbrev=home_team,
+        away_team_abbrev=away_team
+    )
+    
+    print(f"Input:")
+    print(f"• Scores: {home_team} {home_score} - {away_team} {away_score}")
+    print(f"• Post-game series: {postgame_wins}-{postgame_losses} ({postgame_leader})")
+    print("\nOutput:")
+    print(f"• Pre-game series: {result['pregame_series_record']}")
+    print(f"• Pre-game leader: {result['pregame_leader']}")
+    
+    # Test Case 3: First meeting (0-0)
+    print("\nTest Case 3: First meeting")
+    print("-" * 30)
+    result = calculate_series_stats(
+        home_score=100,
+        away_score=95,
+        postgame_home_wins=1,
+        postgame_home_losses=0,
+        postgame_leader=home_team,
+        home_team_abbrev=home_team,
+        away_team_abbrev=away_team
+    )
+    
+    print(f"Input:")
+    print(f"• Scores: {home_team} 100 - {away_team} 95")
+    print(f"• Post-game series: 1-0 ({home_team})")
+    print("\nOutput:")
+    print(f"• Pre-game series: {result['pregame_series_record']}")
+    print(f"• Pre-game leader: {result['pregame_leader']}")
+
 if __name__ == "__main__":
     # test_nba_api_raw()
     # test_overtime_structure()
-    test_all_stats_structure() 
+    # test_series_data_structure()
+    test_series_calculation() 
