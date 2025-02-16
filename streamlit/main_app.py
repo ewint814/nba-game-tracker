@@ -183,15 +183,9 @@ def show_add_game():
                                 home_team_losses=detailed_stats['home_team_losses'],
                                 away_team_wins=detailed_stats['away_team_wins'],
                                 away_team_losses=detailed_stats['away_team_losses'],
-                                # Series info
                                 home_team_series_wins=detailed_stats['home_team_series_wins'],
                                 home_team_series_losses=detailed_stats['home_team_series_losses'],
                                 series_leader=detailed_stats['series_leader'],
-                                pregame_home_team_series_wins=detailed_stats['pregame_home_team_series_wins'],
-                                pregame_home_team_series_losses=detailed_stats['pregame_home_team_series_losses'],
-                                pregame_series_leader=detailed_stats['pregame_series_leader'],
-                                pregame_series_record=detailed_stats['pregame_series_record'],
-                                # Last meeting info
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
                                 last_meeting_game_date=detailed_stats['last_meeting_game_date'],
                                 last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],
@@ -204,7 +198,6 @@ def show_add_game():
                                 last_meeting_visitor_name=detailed_stats['last_meeting_visitor_name'],
                                 last_meeting_visitor_abbrev=detailed_stats['last_meeting_visitor_abbrev'],
                                 last_meeting_visitor_points=detailed_stats['last_meeting_visitor_points'],
-                                # Additional stats
                                 home_team_turnovers=detailed_stats['home_team_turnovers'],
                                 away_team_turnovers=detailed_stats['away_team_turnovers'],
                                 home_total_turnovers=detailed_stats['home_total_turnovers'],
@@ -591,46 +584,72 @@ def show_database_preview():
         # Get the most recent 20 games
         games = session.query(Game).order_by(Game.date.desc()).limit(20).all()
         
-        if not games:
-            st.info("No games found in database")
-            return
-            
-        # Convert to DataFrame for easier display
+        # Convert games to list of dicts first
         games_data = []
         for game in games:
-            # Convert the game object to a dictionary, excluding SQLAlchemy internal attributes
             game_dict = {
                 column.name: getattr(game, column.name)
                 for column in Game.__table__.columns
                 if not column.name.startswith('_')
             }
             games_data.append(game_dict)
-            
+        
+        # Create DataFrame first
         df = pd.DataFrame(games_data)
         
-        # Display options
-        st.subheader("Most Recent Games")
-        st.dataframe(df)
-        
-        # Show full column list
-        st.subheader("Available Database Columns")
-        columns = [column.name for column in Game.__table__.columns]
-        st.write("Total columns:", len(columns))
-        
-        # Display columns in a more readable format
-        col1, col2 = st.columns(2)
-        mid_point = len(columns) // 2
-        
-        with col1:
-            for col in columns[:mid_point]:
-                st.write(f"- {col}")
+        # Create type row
+        type_info = {}
+        for column in Game.__table__.columns:
+            if not column.name.startswith('_'):
+                type_str = str(column.type).upper()
                 
-        with col2:
-            for col in columns[mid_point:]:
-                st.write(f"- {col}")
+                if 'INTEGER' in type_str:
+                    type_info[column.name] = "Integer"
+                elif 'VARCHAR' in type_str or 'STRING' in type_str:
+                    # Safely extract length if it exists
+                    if '(' in type_str and ')' in type_str:
+                        try:
+                            length = type_str.split('(')[1].split(')')[0]
+                            type_info[column.name] = f"String({length})"
+                        except:
+                            type_info[column.name] = "String"
+                    else:
+                        type_info[column.name] = "String"
+                elif 'TEXT' in type_str:
+                    type_info[column.name] = "Text"
+                elif 'DATE' in type_str:
+                    type_info[column.name] = "Date"
+                elif 'TIME' in type_str:
+                    type_info[column.name] = "Time"
+                elif 'ENUM' in type_str:
+                    type_info[column.name] = "Enum"
+                else:
+                    type_info[column.name] = type_str
+        
+        # Add type row at the top
+        df = pd.concat([pd.DataFrame([type_info]), df], ignore_index=True)
+        
+        # Display options
+        st.subheader("Most Recent Games (with Data Types)")
+        st.dataframe(
+            df,
+            use_container_width=True,
+            column_config={
+                column: st.column_config.Column(
+                    width="medium"
+                ) for column in df.columns
+            }
+        )
+        
+        # Show total column count
+        st.info(f"Total number of columns: {len(df.columns)}")
         
     except Exception as e:
         st.error(f"Error loading database preview: {str(e)}")
+        # Debug info
+        st.error("Debug info:")
+        for column in Game.__table__.columns:
+            st.write(f"Column: {column.name}, Type: {str(column.type)}")
     finally:
         session.close()
 
