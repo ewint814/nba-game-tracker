@@ -104,6 +104,10 @@ class NBAApiClient:
             last_meeting = box_data['resultSets'][6]['rowSet'][0]    # LastMeeting
             season_series = box_data['resultSets'][7]['rowSet'][0]   # SeasonSeries
             
+            # Get team stats
+            home_team_stats = next(stats for stats in team_stats if stats[1] == game_summary[6])  # Match home_team_id
+            away_team_stats = next(stats for stats in team_stats if stats[1] == game_summary[7])  # Match visitor_team_id
+            
             # Initialize the stats dictionary with base data
             stats = {
                 # Game Summary Data
@@ -117,26 +121,26 @@ class NBAApiClient:
                 'duration': game_info[2],
                 
                 # Team Stats
-                'home_team_abbrev': team_stats[1][2],
-                'away_team_abbrev': team_stats[0][2],
-                'home_paint_points': team_stats[1][4],
-                'away_paint_points': team_stats[0][4],
-                'home_second_chance_points': team_stats[1][5],
-                'away_second_chance_points': team_stats[0][5],
-                'home_fast_break_points': team_stats[1][6],
-                'away_fast_break_points': team_stats[0][6],
-                'home_largest_lead': team_stats[1][7],
-                'away_largest_lead': team_stats[0][7],
-                'lead_changes': team_stats[1][8],
-                'times_tied': team_stats[1][9],
-                'home_team_turnovers': team_stats[1][10],
-                'away_team_turnovers': team_stats[0][10],
-                'home_total_turnovers': team_stats[1][11],
-                'away_total_turnovers': team_stats[0][11],
-                'home_team_rebounds': team_stats[1][12],
-                'away_team_rebounds': team_stats[0][12],
-                'home_points_off_to': team_stats[1][13],
-                'away_points_off_to': team_stats[0][13],
+                'home_team_abbrev': home_team_stats[2],  # Fixed: Use home team stats
+                'away_team_abbrev': away_team_stats[2],  # Fixed: Use away team stats
+                'home_paint_points': home_team_stats[4],
+                'away_paint_points': away_team_stats[4],
+                'home_second_chance_points': home_team_stats[5],
+                'away_second_chance_points': away_team_stats[5],
+                'home_fast_break_points': home_team_stats[6],
+                'away_fast_break_points': away_team_stats[6],
+                'home_largest_lead': home_team_stats[7],
+                'away_largest_lead': away_team_stats[7],
+                'lead_changes': home_team_stats[8],
+                'times_tied': home_team_stats[9],
+                'home_team_turnovers': home_team_stats[10],
+                'away_team_turnovers': away_team_stats[10],
+                'home_total_turnovers': home_team_stats[11],
+                'away_total_turnovers': away_team_stats[11],
+                'home_team_rebounds': home_team_stats[12],
+                'away_team_rebounds': away_team_stats[12],
+                'home_points_off_to': home_team_stats[13],
+                'away_points_off_to': away_team_stats[13],
                 
                 # Quarter scores
                 'home_q1': line_score[1][8],
@@ -221,8 +225,8 @@ class NBAApiClient:
                 postgame_home_wins=home_wins,
                 postgame_home_losses=home_losses,
                 postgame_leader=series_leader,
-                home_team_abbrev=team_stats[1][2],  # home team abbrev
-                away_team_abbrev=team_stats[0][2]   # away team abbrev
+                home_team_abbrev=home_team_stats[2],  # Fixed: Use home team stats
+                away_team_abbrev=away_team_stats[2]   # Fixed: Use away team stats
             )
             
             stats.update({
