@@ -168,6 +168,9 @@ def show_add_game():
                         # Create new game in database
                         session = Session()
                         try:
+                            # Format the last meeting date to just YYYY-MM-DD
+                            last_meeting_date = datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
+
                             # Create new game instance with all data
                             new_game = Game(
                                 date=date,
@@ -226,9 +229,9 @@ def show_add_game():
                                 pregame_home_team_series_losses=series_data['pregame_home_losses'],
                                 pregame_series_leader=series_data['pregame_leader'],
                                 pregame_series_record=series_data['pregame_series_record'],
-                                # Last meeting data
+                                # Last meeting data with formatted date
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
-                                last_meeting_game_date=detailed_stats['last_meeting_game_date'],
+                                last_meeting_game_date=last_meeting_date,  # Now just stores the date
                                 last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],
                                 last_meeting_home_city=detailed_stats['last_meeting_home_city'],
                                 last_meeting_home_name=detailed_stats['last_meeting_home_name'],
