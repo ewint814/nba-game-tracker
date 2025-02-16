@@ -28,7 +28,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Select Page",
-        ["Add Game", "My Games", "Statistics", "Test API"]
+        ["Add Game", "My Games", "Statistics", "Test API", "Database Preview"]
     )
     
     if page == "Add Game":
@@ -39,6 +39,8 @@ def main():
         show_statistics()
     elif page == "Test API":
         show_test_data()
+    elif page == "Database Preview":
+        show_database_preview()
 
 def show_add_game():
     """Form to add a new game you've attended."""
@@ -155,9 +157,15 @@ def show_add_game():
                                 home_team_losses=detailed_stats['home_team_losses'],
                                 away_team_wins=detailed_stats['away_team_wins'],
                                 away_team_losses=detailed_stats['away_team_losses'],
+                                # Series info
                                 home_team_series_wins=detailed_stats['home_team_series_wins'],
                                 home_team_series_losses=detailed_stats['home_team_series_losses'],
                                 series_leader=detailed_stats['series_leader'],
+                                pregame_home_team_series_wins=detailed_stats['pregame_home_team_series_wins'],
+                                pregame_home_team_series_losses=detailed_stats['pregame_home_team_series_losses'],
+                                pregame_series_leader=detailed_stats['pregame_series_leader'],
+                                pregame_series_record=detailed_stats['pregame_series_record'],
+                                # Last meeting info
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
                                 last_meeting_game_date=detailed_stats['last_meeting_game_date'],
                                 last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],
@@ -170,6 +178,7 @@ def show_add_game():
                                 last_meeting_visitor_name=detailed_stats['last_meeting_visitor_name'],
                                 last_meeting_visitor_abbrev=detailed_stats['last_meeting_visitor_abbrev'],
                                 last_meeting_visitor_points=detailed_stats['last_meeting_visitor_points'],
+                                # Additional stats
                                 home_team_turnovers=detailed_stats['home_team_turnovers'],
                                 away_team_turnovers=detailed_stats['away_team_turnovers'],
                                 home_total_turnovers=detailed_stats['home_total_turnovers'],
@@ -288,14 +297,25 @@ def show_test_data():
                                 st.write(f"{game['away_team']}: {detailed['away_team_wins']}-{detailed['away_team_losses']}")
                                 
                                 st.write("\nSeason Series")
-                                st.write(f"Series Record: {detailed['home_team_series_wins']}-{detailed['home_team_series_losses']}")
+                                # Show pre-game record
+                                st.write(f"Pre-Game Series Record: {detailed['pregame_series_record']}")
+                                if detailed['pregame_series_leader']:
+                                    leader_name = detailed['pregame_series_leader']
+                                    if leader_name == game['home_team']:
+                                        leader_name = game['home_team']
+                                    elif leader_name == game['away_team']:
+                                        leader_name = game['away_team']
+                                    st.write(f"Pre-Game Series Leader: {leader_name}")
+                                
+                                # Show current record
+                                st.write(f"Current Series Record: {detailed['home_team_series_wins']}-{detailed['home_team_series_losses']}")
                                 if detailed['series_leader']:
                                     leader_name = detailed['series_leader']
-                                    if leader_name == detailed['home_team_abbrev']:
+                                    if leader_name == game['home_team']:
                                         leader_name = game['home_team']
-                                    elif leader_name == detailed['away_team_abbrev']:
+                                    elif leader_name == game['away_team']:
                                         leader_name = game['away_team']
-                                    st.write(f"Series Leader: {leader_name}")
+                                    st.write(f"Current Series Leader: {leader_name}")
                             
                             with col2:
                                 st.write("Last Meeting")
@@ -423,14 +443,25 @@ def show_saved_test_data():
                         st.write(f"{game.away_team}: {game.away_team_wins}-{game.away_team_losses}")
                         
                         st.write("\nSeason Series")
-                        st.write(f"Series Record: {game.home_team_series_wins}-{game.home_team_series_losses}")
+                        # Show pre-game record
+                        st.write(f"Pre-Game Series Record: {game.pregame_series_record}")
+                        if game.pregame_series_leader:
+                            leader_name = game.pregame_series_leader
+                            if leader_name == game.home_team_abbrev:
+                                leader_name = game.home_team
+                            elif leader_name == game.away_team_abbrev:
+                                leader_name = game.away_team
+                            st.write(f"Pre-Game Series Leader: {leader_name}")
+                        
+                        # Show current record
+                        st.write(f"Current Series Record: {game.home_team_series_wins}-{game.home_team_series_losses}")
                         if game.series_leader:
                             leader_name = game.series_leader
                             if leader_name == game.home_team_abbrev:
                                 leader_name = game.home_team
                             elif leader_name == game.away_team_abbrev:
                                 leader_name = game.away_team
-                            st.write(f"Series Leader: {leader_name}")
+                            st.write(f"Current Series Leader: {leader_name}")
                     
                     with col2:
                         st.write("Last Meeting")
@@ -522,6 +553,58 @@ def show_saved_test_data():
                     
     except Exception as e:
         st.error(f"Error loading games: {str(e)}")
+    finally:
+        session.close()
+
+def show_database_preview():
+    """Show a preview of the database structure and contents."""
+    st.header("Database Preview")
+    
+    session = Session()
+    try:
+        # Get the most recent 20 games
+        games = session.query(Game).order_by(Game.date.desc()).limit(20).all()
+        
+        if not games:
+            st.info("No games found in database")
+            return
+            
+        # Convert to DataFrame for easier display
+        games_data = []
+        for game in games:
+            # Convert the game object to a dictionary, excluding SQLAlchemy internal attributes
+            game_dict = {
+                column.name: getattr(game, column.name)
+                for column in Game.__table__.columns
+                if not column.name.startswith('_')
+            }
+            games_data.append(game_dict)
+            
+        df = pd.DataFrame(games_data)
+        
+        # Display options
+        st.subheader("Most Recent Games")
+        st.dataframe(df)
+        
+        # Show full column list
+        st.subheader("Available Database Columns")
+        columns = [column.name for column in Game.__table__.columns]
+        st.write("Total columns:", len(columns))
+        
+        # Display columns in a more readable format
+        col1, col2 = st.columns(2)
+        mid_point = len(columns) // 2
+        
+        with col1:
+            for col in columns[:mid_point]:
+                st.write(f"- {col}")
+                
+        with col2:
+            for col in columns[mid_point:]:
+                st.write(f"- {col}")
+        
+    except Exception as e:
+        st.error(f"Error loading database preview: {str(e)}")
     finally:
         session.close()
 

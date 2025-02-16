@@ -8,6 +8,7 @@ statistics, and other NBA-related information.
 from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2
 from nba_api.stats.static import teams
 from datetime import datetime
+from src.utils.game_calculations import calculate_series_stats
 
 class NBAApiClient:
     """A client for interacting with the NBA API with rate limiting and error handling."""
@@ -193,11 +194,6 @@ class NBAApiClient:
                 'last_meeting_visitor_name': last_meeting[10],
                 'last_meeting_visitor_abbrev': last_meeting[11],
                 'last_meeting_visitor_points': last_meeting[12],
-                
-                # Season Series
-                'home_team_series_wins': season_series[4],
-                'home_team_series_losses': season_series[5],
-                'series_leader': season_series[6]
             }
             
             # Add overtime periods if they exist
@@ -209,6 +205,38 @@ class NBAApiClient:
                 if home_score > 0 or away_score > 0:  # If either team scored in this OT
                     stats[f'home_ot{ot}'] = home_score
                     stats[f'away_ot{ot}'] = away_score
+            
+            # Get post-game series info
+            home_wins = season_series[4]
+            home_losses = season_series[5]
+            series_leader = season_series[6]
+            
+            # Calculate pre-game series stats
+            home_score = line_score[1][22]  # PTS column
+            away_score = line_score[0][22]  # PTS column
+            
+            pregame_stats = calculate_series_stats(
+                home_score=home_score,
+                away_score=away_score,
+                postgame_home_wins=home_wins,
+                postgame_home_losses=home_losses,
+                postgame_leader=series_leader,
+                home_team_abbrev=team_stats[1][2],  # home team abbrev
+                away_team_abbrev=team_stats[0][2]   # away team abbrev
+            )
+            
+            stats.update({
+                # Post-game series info
+                'home_team_series_wins': home_wins,
+                'home_team_series_losses': home_losses,
+                'series_leader': series_leader,
+                
+                # Pre-game series info
+                'pregame_home_team_series_wins': pregame_stats['pregame_home_wins'],
+                'pregame_home_team_series_losses': pregame_stats['pregame_home_losses'],
+                'pregame_series_leader': pregame_stats['pregame_leader'],
+                'pregame_series_record': pregame_stats['pregame_series_record']
+            })
             
             return stats
             

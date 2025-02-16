@@ -52,6 +52,12 @@ class Game(Base):
     home_team_series_losses = Column(Integer)
     series_leader = Column(String)
     
+    # Season Series (pre-game)
+    pregame_home_team_series_wins = Column(Integer)
+    pregame_home_team_series_losses = Column(Integer)
+    pregame_series_leader = Column(String)
+    pregame_series_record = Column(String)
+    
     # Last Meeting
     last_meeting_game_id = Column(String)
     last_meeting_game_date = Column(String)
