@@ -75,25 +75,14 @@ class Game(Base):
     last_meeting_team1_score = Column(Integer)
     last_meeting_team2_score = Column(Integer)
     
-    # Team Stats
-    home_paint_points = Column(Integer, CheckConstraint('home_paint_points >= 0'))
-    away_paint_points = Column(Integer, CheckConstraint('away_paint_points >= 0'))
-    home_second_chance_points = Column(Integer, CheckConstraint('home_second_chance_points >= 0'))
-    away_second_chance_points = Column(Integer, CheckConstraint('away_second_chance_points >= 0'))
-    home_fast_break_points = Column(Integer, CheckConstraint('home_fast_break_points >= 0'))
-    away_fast_break_points = Column(Integer, CheckConstraint('away_fast_break_points >= 0'))
+    # Game flow statistics
     home_largest_lead = Column(Integer)
     away_largest_lead = Column(Integer)
-    home_team_turnovers = Column(Integer, CheckConstraint('home_team_turnovers >= 0'))
-    away_team_turnovers = Column(Integer, CheckConstraint('away_team_turnovers >= 0'))
-    home_total_turnovers = Column(Integer, CheckConstraint('home_total_turnovers >= 0'))
-    away_total_turnovers = Column(Integer, CheckConstraint('away_total_turnovers >= 0'))
-    home_team_rebounds = Column(Integer, CheckConstraint('home_team_rebounds >= 0'))
-    away_team_rebounds = Column(Integer, CheckConstraint('away_team_rebounds >= 0'))
-    home_points_off_to = Column(Integer, CheckConstraint('home_points_off_to >= 0'))
-    away_points_off_to = Column(Integer, CheckConstraint('away_points_off_to >= 0'))
-    lead_changes = Column(Integer, CheckConstraint('lead_changes >= 0'))
-    times_tied = Column(Integer, CheckConstraint('times_tied >= 0'))
+    lead_changes = Column(Integer)
+    times_tied = Column(Integer)
+    
+    # Team Stats
+    team_stats = relationship("TeamStats", back_populates="game")
     
     # User Input
     seat_section = Column(String(20))
@@ -194,6 +183,22 @@ class QuarterScores(Base):
     away_score = Column(Integer, CheckConstraint('away_score >= 0'))
     
     game = relationship("Game", back_populates="quarter_scores")
+
+class TeamStats(Base):
+    __tablename__ = 'team_stats'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    team_id = Column(Integer, nullable=False)
+    paint_points = Column(Integer, CheckConstraint('paint_points >= 0'))
+    second_chance_points = Column(Integer, CheckConstraint('second_chance_points >= 0'))
+    fast_break_points = Column(Integer, CheckConstraint('fast_break_points >= 0'))
+    team_turnovers = Column(Integer, CheckConstraint('team_turnovers >= 0'))
+    total_turnovers = Column(Integer, CheckConstraint('total_turnovers >= 0'))
+    team_rebounds = Column(Integer, CheckConstraint('team_rebounds >= 0'))
+    points_off_to = Column(Integer, CheckConstraint('points_off_to >= 0'))
+    
+    game = relationship("Game", back_populates="team_stats")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """

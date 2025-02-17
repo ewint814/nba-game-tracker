@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores
+from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores, TeamStats
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -153,7 +153,7 @@ def show_add_game():
                         # Get detailed stats when saving
                         with st.spinner("Getting detailed game stats..."):
                             detailed_stats = client.get_detailed_stats(game_data['game_id'])
-                            
+                        
                         # Calculate pre-game series data
                         series_data = calculate_series_stats(
                             home_score=game_data['home_score'],
@@ -165,16 +165,10 @@ def show_add_game():
                             away_team_abbrev=detailed_stats['away_team_abbrev']
                         )
                         
-                        # Get the officials data from detailed_stats
-                        officials = detailed_stats['officials_complete']
-
-                        # Create new game in database
+                        # Create new game with game flow stats
                         session = Session()
                         try:
-                            # Convert the string to a datetime.date object
-                            last_meeting_date = datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').date()
-
-                            # Create new game without inactive_players field
+                            # Create new game without the team stats fields
                             new_game = Game(
                                 date=date,
                                 home_team=game_data['home_team'],
@@ -188,19 +182,8 @@ def show_add_game():
                                 notes=notes,
                                 arena=game_data['arena'],
                                 game_id=game_data['game_id'],
-                                # Add detailed stats
                                 attendance=detailed_stats['attendance'],
                                 duration_minutes=detailed_stats['duration'],
-                                # Team stats
-                                home_paint_points=detailed_stats['home_paint_points'],
-                                away_paint_points=detailed_stats['away_paint_points'],
-                                home_second_chance_points=detailed_stats['home_second_chance_points'],
-                                away_second_chance_points=detailed_stats['away_second_chance_points'],
-                                home_fast_break_points=detailed_stats['home_fast_break_points'],
-                                away_fast_break_points=detailed_stats['away_fast_break_points'],
-                                home_largest_lead=detailed_stats['home_largest_lead'],
-                                away_largest_lead=detailed_stats['away_largest_lead'],
-                                # New fields
                                 season=format_season(detailed_stats['season'][:4]),
                                 national_tv=detailed_stats['national_tv'] if detailed_stats['national_tv'] else 'Local',
                                 home_team_id=detailed_stats['home_team_id'],
@@ -222,24 +205,45 @@ def show_add_game():
                                 pregame_series_record=series_data['pregame_series_record'],
                                 # Last meeting data
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
-                                last_meeting_game_date=last_meeting_date,
+                                last_meeting_game_date=datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').date(),
                                 last_meeting_team1_id=detailed_stats['last_meeting_home_team_id'],
                                 last_meeting_team2_id=detailed_stats['last_meeting_visitor_team_id'],
                                 last_meeting_team1_score=detailed_stats['last_meeting_home_points'],
                                 last_meeting_team2_score=detailed_stats['last_meeting_visitor_points'],
-                                # Additional stats
-                                home_team_turnovers=detailed_stats['home_team_turnovers'],
-                                away_team_turnovers=detailed_stats['away_team_turnovers'],
-                                home_total_turnovers=detailed_stats['home_total_turnovers'],
-                                away_total_turnovers=detailed_stats['away_total_turnovers'],
-                                home_team_rebounds=detailed_stats['home_team_rebounds'],
-                                away_team_rebounds=detailed_stats['away_team_rebounds'],
-                                home_points_off_to=detailed_stats['home_points_off_to'],
-                                away_points_off_to=detailed_stats['away_points_off_to'],
+                                home_largest_lead=detailed_stats['home_largest_lead'],
+                                away_largest_lead=detailed_stats['away_largest_lead'],
                                 lead_changes=detailed_stats['lead_changes'],
                                 times_tied=detailed_stats['times_tied']
                             )
 
+                            # Create home team stats without largest lead
+                            home_stats = TeamStats(
+                                game_id=str(game_data['game_id']),
+                                team_id=detailed_stats['home_team_id'],
+                                paint_points=detailed_stats['home_paint_points'],
+                                second_chance_points=detailed_stats['home_second_chance_points'],
+                                fast_break_points=detailed_stats['home_fast_break_points'],
+                                team_turnovers=detailed_stats['home_team_turnovers'],
+                                total_turnovers=detailed_stats['home_total_turnovers'],
+                                team_rebounds=detailed_stats['home_team_rebounds'],
+                                points_off_to=detailed_stats['home_points_off_to']
+                            )
+                            session.add(home_stats)
+                            
+                            # Create away team stats without largest lead
+                            away_stats = TeamStats(
+                                game_id=str(game_data['game_id']),
+                                team_id=detailed_stats['visitor_team_id'],
+                                paint_points=detailed_stats['away_paint_points'],
+                                second_chance_points=detailed_stats['away_second_chance_points'],
+                                fast_break_points=detailed_stats['away_fast_break_points'],
+                                team_turnovers=detailed_stats['away_team_turnovers'],
+                                total_turnovers=detailed_stats['away_total_turnovers'],
+                                team_rebounds=detailed_stats['away_team_rebounds'],
+                                points_off_to=detailed_stats['away_points_off_to']
+                            )
+                            session.add(away_stats)
+                            
                             # Add quarter scores
                             quarters = ['Q1', 'Q2', 'Q3', 'Q4']
                             for quarter in quarters:
@@ -445,15 +449,13 @@ def show_test_data():
                         stats_df = pd.DataFrame({
                             'Stat': [
                                 'Points in Paint', 'Second Chance Points', 
-                                'Fast Break Points', 'Largest Lead',
-                                'Team Turnovers', 'Total Turnovers',
-                                'Team Rebounds', 'Points off Turnovers'
+                                'Fast Break Points', 'Team Turnovers',
+                                'Total Turnovers', 'Team Rebounds', 'Points off Turnovers'
                             ],
                             game['home_team']: [
                                 detailed['home_paint_points'],
                                 detailed['home_second_chance_points'],
                                 detailed['home_fast_break_points'],
-                                detailed['home_largest_lead'],
                                 detailed['home_team_turnovers'],
                                 detailed['home_total_turnovers'],
                                 detailed['home_team_rebounds'],
@@ -463,7 +465,6 @@ def show_test_data():
                                 detailed['away_paint_points'],
                                 detailed['away_second_chance_points'],
                                 detailed['away_fast_break_points'],
-                                detailed['away_largest_lead'],
                                 detailed['away_team_turnovers'],
                                 detailed['away_total_turnovers'],
                                 detailed['away_team_rebounds'],
@@ -503,6 +504,7 @@ def show_database_preview():
     table_options = {
         "Games": Game,
         "Quarter Scores": QuarterScores,
+        "Team Stats": TeamStats,
         "Officials": Official,
         "Inactive Players": InactivePlayer,
         "Photos": Photo
