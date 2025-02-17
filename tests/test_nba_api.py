@@ -399,7 +399,7 @@ def test_boxscore_advanced():
     from nba_api.stats import endpoints
     
     # Test with two different game IDs
-    game_ids = ["0022400773", "0022300642"]  # Add both game IDs
+    game_ids = ["0022400773", "0022300642"]
     
     for game_id in game_ids:
         print(f"\nTesting Game ID: {game_id}")
@@ -408,22 +408,22 @@ def test_boxscore_advanced():
         response = endpoints.BoxScoreAdvancedV2(game_id=game_id)
         data = response.get_dict()
         
-        # Get the player stats result set
-        player_stats = data['resultSets'][0]  # Player Stats is first result set
+        # Print all headers first
+        headers = data['resultSets'][0]['headers']
+        print("\nField Names:")
+        for i, header in enumerate(headers):
+            print(f"{i}: {header}")
+            
+        # Find TM_TOV_PCT index
+        tov_pct_index = headers.index('TM_TOV_PCT')
+        print(f"\nTM_TOV_PCT is at index: {tov_pct_index}")
         
-        print("\nAdvanced Stats Comparison:")
-        print("-" * 30)
-        for row in player_stats['rowSet']:
-            print(f"\nPlayer: {row[5]}")
-            print(f"Raw E_OFF_RATING: {row[10]}")  # Raw value
-            print(f"Type: {type(row[10])}")
-            
-            # Calculate what our code would do
-            calculated = float(row[10]) if row[10] is not None else None
-            print(f"Our calculated value: {calculated}")
-            
-            print(f"Raw OFF_RATING: {row[11]}")  # For comparison
-            print("-" * 30)
+        # Show some sample values
+        print("\nSample TOV_RATIO values:")
+        for row in data['resultSets'][0]['rowSet'][:5]:  # First 5 players
+            player_name = row[5]
+            tov_pct = row[tov_pct_index]
+            print(f"{player_name}: {tov_pct}")
 
 if __name__ == "__main__":
     test_boxscore_advanced() 

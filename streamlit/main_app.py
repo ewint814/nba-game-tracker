@@ -320,8 +320,7 @@ def show_add_game():
                             session.add(game_flow)
 
                             # Get advanced stats
-                            advanced_stats = boxscoreadvancedv2.BoxScoreAdvancedV2(game_id=game_data['game_id'])
-                            advanced_data = advanced_stats.get_dict()
+                            advanced_data = client.get_advanced_stats(game_data['game_id'])
                             
                             # Create player advanced stats
                             player_stats = advanced_data['resultSets'][0]['rowSet']  # Player Stats
@@ -360,7 +359,7 @@ def show_add_game():
                                     oreb_pct=convert_stat(player[19]),
                                     dreb_pct=convert_stat(player[20]),
                                     reb_pct=convert_stat(player[21]),
-                                    tm_tov_pct=convert_stat(player[22]),
+                                    tov_ratio=convert_stat(player[22]),
                                     efg_pct=convert_stat(player[23]),
                                     ts_pct=convert_stat(player[24]),
                                     usg_pct=convert_stat(player[25]),

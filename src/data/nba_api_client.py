@@ -5,7 +5,7 @@ This module provides a wrapper around the nba_api package to fetch game data,
 statistics, and other NBA-related information.
 """
 
-from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2
+from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2, boxscoreadvancedv2
 from nba_api.stats.static import teams
 from datetime import datetime
 from src.utils.game_calculations import calculate_series_stats
@@ -246,6 +246,28 @@ class NBAApiClient:
             
         except Exception as e:
             print(f"Error getting detailed stats for game {game_id}: {str(e)}")
+            raise
+
+    def get_advanced_stats(self, game_id):
+        """
+        Get advanced statistics for a specific game.
+        
+        Args:
+            game_id (str): NBA API game ID
+            
+        Returns:
+            dict: Dictionary containing advanced stats for players and teams
+        """
+        try:
+            response = boxscoreadvancedv2.BoxScoreAdvancedV2(game_id=game_id)
+            data = response.get_dict()
+            
+            return {
+                'resultSets': data['resultSets']  # Keep same structure for compatibility
+            }
+            
+        except Exception as e:
+            print(f"Error getting advanced stats for game {game_id}: {str(e)}")
             raise
 
 

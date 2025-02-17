@@ -242,7 +242,7 @@ class PlayerAdvancedStats(Base):
     oreb_pct = Column(Float)
     dreb_pct = Column(Float)
     reb_pct = Column(Float)
-    tm_tov_pct = Column(Float)
+    tov_ratio = Column(Float)
     efg_pct = Column(Float)
     ts_pct = Column(Float)
     usg_pct = Column(Float)
