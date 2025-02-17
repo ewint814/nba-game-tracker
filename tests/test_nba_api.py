@@ -240,9 +240,190 @@ def test_last_meeting_structure():
     except Exception as e:
         print(f"\nError: {str(e)}")
 
+def test_available_endpoints():
+    """List all available NBA API endpoints with their descriptions."""
+    from nba_api.stats import endpoints
+    import inspect
+    
+    print("\nNBA API Available Endpoints")
+    print("=" * 50)
+    
+    # Get all endpoint classes from the endpoints module
+    endpoint_classes = [obj for name, obj in inspect.getmembers(endpoints) 
+                       if inspect.isclass(obj) and obj.__module__.startswith('nba_api.stats.endpoints')]
+    
+    for endpoint in sorted(endpoint_classes, key=lambda x: x.__name__):
+        print(f"\n{endpoint.__name__}")
+        print("-" * len(endpoint.__name__))
+        
+        # Get endpoint description if available
+        if endpoint.__doc__:
+            print(f"Description: {endpoint.__doc__.strip()}")
+        
+        # Try to get an example of available parameters
+        try:
+            params = endpoint.expected_parameters
+            if params:
+                print("Parameters:")
+                for param in params:
+                    print(f"  - {param}")
+        except AttributeError:
+            pass
+
+def test_endpoint_details(endpoint_name="BoxScoreSummaryV2"):
+    """Examine a specific NBA API endpoint in detail."""
+    from nba_api.stats import endpoints
+    import inspect
+    
+    print(f"\nExamining Endpoint: {endpoint_name}")
+    print("=" * 50)
+    
+    try:
+        # Get the endpoint class
+        endpoint_class = getattr(endpoints, endpoint_name)
+        
+        # Print description
+        if endpoint_class.__doc__:
+            print(f"\nDescription:")
+            print(endpoint_class.__doc__.strip())
+        
+        # Print parameters
+        print("\nRequired Parameters:")
+        if hasattr(endpoint_class, 'expected_parameters'):
+            for param in endpoint_class.expected_parameters:
+                print(f"  - {param}")
+        
+        # Try to make a sample request
+        print("\nExample Response Structure:")
+        if endpoint_name == "BoxScoreSummaryV2":
+            # Use our test game ID
+            response = endpoint_class(game_id="0022400773")
+        elif endpoint_name == "ScoreboardV2":
+            # Use our test date
+            response = endpoint_class(game_date=datetime(2025, 2, 10))
+        else:
+            print("Add test parameters for this endpoint")
+            return
+            
+        data = response.get_dict()
+        
+        # Print available result sets
+        print("\nAvailable Result Sets:")
+        for i, result_set in enumerate(data['resultSets']):
+            print(f"\n{i}: {result_set['name']}")
+            print("Headers:")
+            for header in result_set['headers']:
+                print(f"  - {header}")
+            if result_set['rowSet']:
+                print(f"\nExample Row:")
+                pprint(result_set['rowSet'][0])
+            
+    except Exception as e:
+        print(f"Error examining endpoint: {str(e)}")
+
+def test_endpoints_in_groups():
+    """Examine NBA API endpoints in groups of 3."""
+    from nba_api.stats import endpoints
+    import inspect
+    
+    # Get all endpoint classes
+    endpoint_classes = [obj for name, obj in inspect.getmembers(endpoints) 
+                       if inspect.isclass(obj) and obj.__module__.startswith('nba_api.stats.endpoints')]
+    
+    # Sort alphabetically
+    endpoint_classes.sort(key=lambda x: x.__name__)
+    
+    # Common parameters we'll use
+    SAMPLE_PLAYER_ID = "1628369"  # Jayson Tatum
+    SAMPLE_TEAM_ID = "1610612738"  # Celtics
+    SAMPLE_GAME_ID = "0022400773"
+    SAMPLE_SEASON = "2023-24"
+    SAMPLE_DATE = datetime(2025, 2, 10)
+    
+    # Process next 3 endpoints
+    for endpoint_class in endpoint_classes[3:6]:  # BoxScore endpoints
+        print("\n")
+        print("=" * 100)
+        print(f"ENDPOINT: {endpoint_class.__name__}")
+        print("=" * 100)
+        
+        # Print description
+        if endpoint_class.__doc__:
+            print(f"\nDescription:")
+            print(endpoint_class.__doc__.strip())
+        
+        # Print parameters
+        print("\nRequired Parameters:")
+        if hasattr(endpoint_class, 'expected_parameters'):
+            for param in endpoint_class.expected_parameters:
+                print(f"  - {param}")
+        
+        # Try to make a sample request
+        print("\nExample Response Structure:")
+        try:
+            # Handle different endpoints with appropriate parameters
+            if endpoint_class.__name__.startswith("BoxScore"):
+                response = endpoint_class(game_id=SAMPLE_GAME_ID)
+            elif "player" in endpoint_class.__name__.lower():
+                response = endpoint_class(player_id=SAMPLE_PLAYER_ID)
+            elif "team" in endpoint_class.__name__.lower():
+                response = endpoint_class(team_id=SAMPLE_TEAM_ID)
+            elif "game" in endpoint_class.__name__.lower():
+                response = endpoint_class(game_id=SAMPLE_GAME_ID)
+            elif "season" in endpoint_class.__name__.lower():
+                response = endpoint_class(season=SAMPLE_SEASON)
+            else:
+                print("No sample request configured for this endpoint")
+                continue
+                
+            data = response.get_dict()
+            
+            # Print available result sets
+            print("\nAvailable Result Sets:")
+            for i, result_set in enumerate(data['resultSets']):
+                print(f"\n{i}: {result_set['name']}")
+                print("Headers:")
+                for header in result_set['headers']:
+                    print(f"  - {header}")
+                if result_set['rowSet']:
+                    print(f"\nExample Row:")
+                    pprint(result_set['rowSet'][0])
+                    
+        except Exception as e:
+            print(f"Error making sample request: {str(e)}")
+        
+        print("\n" + "-" * 100)  # Separator between endpoints
+
+def test_boxscore_advanced():
+    """Test to see all available fields from BoxScoreAdvancedV2."""
+    from nba_api.stats import endpoints
+    
+    # Test with two different game IDs
+    game_ids = ["0022400773", "0022300642"]  # Add both game IDs
+    
+    for game_id in game_ids:
+        print(f"\nTesting Game ID: {game_id}")
+        print("=" * 50)
+        
+        response = endpoints.BoxScoreAdvancedV2(game_id=game_id)
+        data = response.get_dict()
+        
+        # Get the player stats result set
+        player_stats = data['resultSets'][0]  # Player Stats is first result set
+        
+        print("\nAdvanced Stats Comparison:")
+        print("-" * 30)
+        for row in player_stats['rowSet']:
+            print(f"\nPlayer: {row[5]}")
+            print(f"Raw E_OFF_RATING: {row[10]}")  # Raw value
+            print(f"Type: {type(row[10])}")
+            
+            # Calculate what our code would do
+            calculated = float(row[10]) if row[10] is not None else None
+            print(f"Our calculated value: {calculated}")
+            
+            print(f"Raw OFF_RATING: {row[11]}")  # For comparison
+            print("-" * 30)
+
 if __name__ == "__main__":
-    # test_nba_api_raw()
-    # test_overtime_structure()
-    # test_series_data_structure()
-    # test_series_calculation()
-    test_last_meeting_structure() 
+    test_boxscore_advanced() 

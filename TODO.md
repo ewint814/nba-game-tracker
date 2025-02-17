@@ -12,11 +12,32 @@
   - Game flow statistics
   - Officials and inactive players
   - Season series tracking (pre and post-game)
+  - Player advanced statistics
 - Test API section with data verification
 - Database preview tool for development
 - Development tools for schema updates
 
 ## Next Steps
+
+### Immediate Tasks
+1. Team Advanced Stats
+   - [ ] Verify indices in NBA API response
+   - [ ] Handle 0.0 values like player stats
+   - [ ] Test in Streamlit app
+
+2. Data Dictionary Creation
+   - [ ] PlayerAdvancedStats table
+   - [ ] TeamAdvancedStats table
+   - [ ] Game table
+   - [ ] Photo table
+   - [ ] InactivePlayer table
+   - [ ] Official table
+   - [ ] QuarterScores table
+   - [ ] TeamStats table
+   - [ ] SeriesStats table
+   - [ ] LastMeeting table
+   - [ ] VenueInfo table
+   - [ ] GameFlow table
 
 ### Game Statistics
 1. Advanced Statistics
@@ -80,3 +101,138 @@
 - Add data visualization for game statistics
 - Add weather data for game days
 - Add player stats tracking
+
+## NBA API Endpoints to Evaluate
+
+### Completed ✅
+- [ ] AllTimeLeadersGrids (Not useful - historical league-wide data)
+- [ ] AssistLeaders (Not useful - season-level only)
+- [ ] AssistTracker (Not useful - single number only)
+- [x] BoxScoreAdvancedV2 (Useful - Added to database, implemented for both players and teams)
+
+### To Evaluate 🔄
+- [ ] BoxScoreDefensive
+- [ ] BoxScoreFourFactors
+- [ ] BoxScoreMisc
+- [ ] BoxScorePlayerTrack
+- [ ] BoxScoreScoringV2
+- [ ] BoxScoreSummaryV2
+- [ ] BoxScoreTraditional
+- [ ] BoxScoreUsage
+- [ ] CommonAllPlayers
+- [ ] CommonPlayerInfo
+- [ ] CommonPlayoffSeries
+- [ ] CommonTeamRoster
+- [ ] CommonTeamYears
+- [ ] CumulativePlayerStats
+- [ ] DefenseHub
+- [ ] DraftBoard
+- [ ] DraftCombineDrill
+- [ ] DraftCombineNonStationaryShooting
+- [ ] DraftCombinePlayerAnthro
+- [ ] DraftCombineSpots
+- [ ] DraftCombineStats
+- [ ] DraftHistory
+- [ ] FranchiseHistory
+- [ ] FranchiseLeaders
+- [ ] GameRotation
+- [ ] GLAlumBoxScoreSimilarityScore
+- [ ] HomePageLeaders
+- [ ] HomePageV2
+- [ ] HustleStatsBoxScore
+- [ ] InfographicFanDuelPlayer
+- [ ] LeadersTiles
+- [ ] LeagueDashLineups
+- [ ] LeagueDashOppPtShot
+- [ ] LeagueDashPlayerBioStats
+- [ ] LeagueDashPlayerClutch
+- [ ] LeagueDashPlayerPtShot
+- [ ] LeagueDashPlayerShotLocations
+- [ ] LeagueDashPlayerStats
+- [ ] LeagueDashPtDefend
+- [ ] LeagueDashPtStats
+- [ ] LeagueDashPtTeamDefend
+- [ ] LeagueDashTeamClutch
+- [ ] LeagueDashTeamPtShot
+- [ ] LeagueDashTeamShotLocations
+- [ ] LeagueDashTeamStats
+- [ ] LeagueGameFinder
+- [ ] LeagueGameLog
+- [ ] LeagueHustleStatsPlayer
+- [ ] LeagueHustleStatsPlayerLeaders
+- [ ] LeagueHustleStatsTeam
+- [ ] LeagueHustleStatsTeamLeaders
+- [ ] LeagueLeaders
+- [ ] LeagueLineupViz
+- [ ] LeaguePlayerOnDetails
+- [ ] LeagueSeasonMatchups
+- [ ] LeagueStandings
+- [ ] LeagueStandingsV3
+- [ ] PlayByPlay
+- [ ] PlayByPlayV2
+- [ ] PlayerAwards
+- [ ] PlayerCareerByCollege
+- [ ] PlayerCareerByCollegeRollup
+- [ ] PlayerCareerStats
+- [ ] PlayerCompare
+- [ ] PlayerDashboardByClutch
+- [ ] PlayerDashboardByGameSplits
+- [ ] PlayerDashboardByGeneralSplits
+- [ ] PlayerDashboardByLastNGames
+- [ ] PlayerDashboardByOpponent
+- [ ] PlayerDashboardByShootingSplits
+- [ ] PlayerDashboardByTeamPerformance
+- [ ] PlayerDashboardByYearOverYear
+- [ ] PlayerDashPtPass
+- [ ] PlayerDashPtReb
+- [ ] PlayerDashPtShotDefend
+- [ ] PlayerDashPtShots
+- [ ] PlayerEstimatedMetrics
+- [ ] PlayerFantasyProfile
+- [ ] PlayerFantasyProfileBarGraph
+- [ ] PlayerGameLog
+- [ ] PlayerGameLogs
+- [ ] PlayerGameStreakFinder
+- [ ] PlayerIndex
+- [ ] PlayerProfileV2
+- [ ] PlayerVsPlayer
+- [ ] PlayoffPicture
+- [ ] ScoreboardV2
+- [ ] ShotChartDetail
+- [ ] ShotChartLineupDetail
+- [ ] SynergyPlayTypes
+- [ ] TeamAndPlayersVsPlayers
+- [ ] TeamDashboardByClutch
+- [ ] TeamDashboardByGameSplits
+- [ ] TeamDashboardByGeneralSplits
+- [ ] TeamDashboardByLastNGames
+- [ ] TeamDashboardByOpponent
+- [ ] TeamDashboardByShootingSplits
+- [ ] TeamDashboardByTeamPerformance
+- [ ] TeamDashboardByYearOverYear
+- [ ] TeamDashLineups
+- [ ] TeamDashPtPass
+- [ ] TeamDashPtReb
+- [ ] TeamDashPtShots
+- [ ] TeamDetails
+- [ ] TeamEstimatedMetrics
+- [ ] TeamGameLog
+- [ ] TeamGameLogs
+- [ ] TeamGameSplits
+- [ ] TeamGameStreakFinder
+- [ ] TeamHistoricalLeaders
+- [ ] TeamInfoCommon
+- [ ] TeamPlayerDashboard
+- [ ] TeamPlayerOnOffDetails
+- [ ] TeamPlayerOnOffSummary
+- [ ] TeamVsPlayer
+- [ ] TeamYearByYearStats
+- [ ] VideoDetails
+- [ ] VideoEvents
+- [ ] VideoStatus
+- [ ] WinProbabilityPBP
+
+### Notes
+- ✅ = Evaluated and decision made
+- 🔄 = To be evaluated
+- Will update with notes about usefulness for our database as we evaluate each endpoint

@@ -58,6 +58,8 @@ class Game(Base):
     officials = relationship("Official", back_populates="game")
     inactive_players = relationship("InactivePlayer", back_populates="game")
     photos = relationship("Photo", back_populates="game")
+    player_advanced_stats = relationship("PlayerAdvancedStats", back_populates="game")
+    team_advanced_stats = relationship("TeamAdvancedStats", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -213,6 +215,83 @@ class GameFlow(Base):
     times_tied = Column(Integer)
     
     game = relationship("Game", back_populates="game_flow")
+
+class PlayerAdvancedStats(Base):
+    __tablename__ = 'player_advanced_stats'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    team_id = Column(Integer)
+    player_id = Column(String(20))
+    player_name = Column(String(100))
+    starting_position = Column(String(1))  # F/G/C from COMMENT field
+    starter = Column(Boolean)     # True if player started the game
+    status = Column(String(50))   # Either minutes played "MM:SS" or DNP reason
+    played = Column(Boolean)      # True if player played in the game
+    
+    # Advanced Stats
+    e_off_rating = Column(Float)
+    off_rating = Column(Float)
+    e_def_rating = Column(Float)
+    def_rating = Column(Float)
+    e_net_rating = Column(Float)
+    net_rating = Column(Float)
+    ast_pct = Column(Float)
+    ast_tov = Column(Float)
+    ast_ratio = Column(Float)
+    oreb_pct = Column(Float)
+    dreb_pct = Column(Float)
+    reb_pct = Column(Float)
+    tm_tov_pct = Column(Float)
+    efg_pct = Column(Float)
+    ts_pct = Column(Float)
+    usg_pct = Column(Float)
+    e_usg_pct = Column(Float)
+    e_pace = Column(Float)
+    pace = Column(Float)
+    pace_per40 = Column(Float)
+    poss = Column(Integer)
+    pie = Column(Float)
+    
+    game = relationship("Game", back_populates="player_advanced_stats")
+
+class TeamAdvancedStats(Base):
+    __tablename__ = 'team_advanced_stats'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    team_id = Column(Integer)
+    team_name = Column(String(50))
+    team_abbreviation = Column(String(3))
+    team_city = Column(String(50))
+    minutes = Column(String(50))  # Changed to String to handle "MMM:SS" format
+    
+    # Advanced Stats
+    e_off_rating = Column(Float)
+    off_rating = Column(Float)
+    e_def_rating = Column(Float)
+    def_rating = Column(Float)
+    e_net_rating = Column(Float)
+    net_rating = Column(Float)
+    ast_pct = Column(Float)
+    ast_tov = Column(Float)
+    ast_ratio = Column(Float)
+    oreb_pct = Column(Float)
+    dreb_pct = Column(Float)
+    reb_pct = Column(Float)
+    e_tm_tov_pct = Column(Float)
+    tm_tov_pct = Column(Float)
+    efg_pct = Column(Float)
+    ts_pct = Column(Float)
+    usg_pct = Column(Float)
+    e_usg_pct = Column(Float)
+    e_pace = Column(Float)
+    pace = Column(Float)
+    pace_per40 = Column(Float)
+    poss = Column(Integer)
+    pie = Column(Float)
+    
+    game = relationship("Game", back_populates="team_advanced_stats")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """

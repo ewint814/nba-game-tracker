@@ -2,19 +2,20 @@ import streamlit as st
 from datetime import datetime, timedelta
 import sys
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 import json
 import time
 import gc
+from nba_api.stats.endpoints import boxscoreadvancedv2
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores, TeamStats, SeriesStats, LastMeeting, VenueInfo, GameFlow
+from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores, TeamStats, SeriesStats, LastMeeting, VenueInfo, GameFlow, PlayerAdvancedStats, TeamAdvancedStats
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -318,6 +319,96 @@ def show_add_game():
                             )
                             session.add(game_flow)
 
+                            # Get advanced stats
+                            advanced_stats = boxscoreadvancedv2.BoxScoreAdvancedV2(game_id=game_data['game_id'])
+                            advanced_data = advanced_stats.get_dict()
+                            
+                            # Create player advanced stats
+                            player_stats = advanced_data['resultSets'][0]['rowSet']  # Player Stats
+                            for player in player_stats:
+                                # Get comment field and determine if player was a starter
+                                starting_position = player[7]  # COMMENT field
+                                starter = bool(starting_position and starting_position in ['F', 'G', 'C'])
+                                
+                                # Get status and determine if player played based on if they have stats
+                                status = player[8] if player[8] and player[8].strip() else None  # COMMENT field
+                                played = status is None
+                                
+                                def convert_stat(value):
+                                    if value is None or (isinstance(value, (int, float)) and value == 0.0):
+                                        return None
+                                    return float(value)
+                                
+                                player_advanced = PlayerAdvancedStats(
+                                    game_id=str(game_data['game_id']),
+                                    team_id=player[1],
+                                    player_id=player[4],
+                                    player_name=player[5],
+                                    starting_position=starting_position if starter else None,
+                                    starter=starter,
+                                    status=status,
+                                    played=played,
+                                    e_off_rating=convert_stat(player[10]),
+                                    off_rating=convert_stat(player[11]),
+                                    e_def_rating=convert_stat(player[12]),
+                                    def_rating=convert_stat(player[13]),
+                                    e_net_rating=convert_stat(player[14]),
+                                    net_rating=convert_stat(player[15]),
+                                    ast_pct=convert_stat(player[16]),
+                                    ast_tov=convert_stat(player[17]),
+                                    ast_ratio=convert_stat(player[18]),
+                                    oreb_pct=convert_stat(player[19]),
+                                    dreb_pct=convert_stat(player[20]),
+                                    reb_pct=convert_stat(player[21]),
+                                    tm_tov_pct=convert_stat(player[22]),
+                                    efg_pct=convert_stat(player[23]),
+                                    ts_pct=convert_stat(player[24]),
+                                    usg_pct=convert_stat(player[25]),
+                                    e_usg_pct=convert_stat(player[26]),
+                                    e_pace=convert_stat(player[27]),
+                                    pace=convert_stat(player[28]),
+                                    pace_per40=convert_stat(player[29]),
+                                    poss=convert_stat(player[30]),
+                                    pie=convert_stat(player[31])
+                                )
+                                session.add(player_advanced)
+                            
+                            # Create team advanced stats
+                            team_stats = advanced_data['resultSets'][1]['rowSet']  # Team Stats
+                            for team in team_stats:
+                                team_advanced = TeamAdvancedStats(
+                                    game_id=str(game_data['game_id']),
+                                    team_id=team[1],
+                                    team_name=team[2],
+                                    team_abbreviation=team[3],
+                                    team_city=team[4],
+                                    minutes=team[5],
+                                    e_off_rating=team[6],
+                                    off_rating=team[7],
+                                    e_def_rating=team[8],
+                                    def_rating=team[9],
+                                    e_net_rating=team[10],
+                                    net_rating=team[11],
+                                    ast_pct=team[12],
+                                    ast_tov=team[13],
+                                    ast_ratio=team[14],
+                                    oreb_pct=team[15],
+                                    dreb_pct=team[16],
+                                    reb_pct=team[17],
+                                    e_tm_tov_pct=team[18],
+                                    tm_tov_pct=team[19],
+                                    efg_pct=team[20],
+                                    ts_pct=team[21],
+                                    usg_pct=team[22],
+                                    e_usg_pct=team[23],
+                                    e_pace=team[24],
+                                    pace=team[25],
+                                    pace_per40=team[26],
+                                    poss=team[27],
+                                    pie=team[28]
+                                )
+                                session.add(team_advanced)
+
                             session.add(new_game)
                             session.commit()
                             st.success("Game added successfully!")
@@ -531,7 +622,9 @@ def show_database_preview():
         "Last Meetings": LastMeeting,
         "Officials": Official,
         "Inactive Players": InactivePlayer,
-        "Photos": Photo
+        "Photos": Photo,
+        "Player Advanced Stats": PlayerAdvancedStats,
+        "Team Advanced Stats": TeamAdvancedStats
     }
     
     selected_table = st.selectbox("Select Table", options=list(table_options.keys()))
@@ -597,6 +690,71 @@ def show_database_preview():
         st.error(f"Error loading database preview: {str(e)}")
     finally:
         session.close()
+
+def view_database():
+    """View and manage database entries."""
+    st.header("Database Entries")
+    
+    # Get all games with their related data
+    games = Session().query(Game).all()
+    
+    # Create tabs for different tables
+    tabs = st.tabs([
+        "Games", "Venue Info", "Game Flow", "Team Stats", 
+        "Series Stats", "Last Meeting", "Quarter Scores", 
+        "Officials", "Inactive Players", "Photos",
+        "Player Advanced Stats", "Team Advanced Stats"
+    ])
+    
+    # Games tab
+    with tabs[0]:
+        if games:
+            games_data = []
+            for game in games:
+                games_data.append({
+                    "ID": game.id,
+                    "Game ID": game.game_id,
+                    "Date": game.date,
+                    "Home Team": game.home_team,
+                    "Away Team": game.away_team,
+                    "Score": f"{game.home_score}-{game.away_score}",
+                    "Section": game.seat_section,
+                    "Row": game.seat_row,
+                    "Seat": game.seat_number
+                })
+            st.dataframe(games_data)
+    
+    # ... (existing tabs 1-9 remain the same) ...
+    
+    # Player Advanced Stats tab
+    with tabs[10]:
+        player_advanced_stats = Session().query(PlayerAdvancedStats).all()
+        if player_advanced_stats:
+            # Get column names from model
+            columns = [column.key for column in inspect(PlayerAdvancedStats).attrs]
+            
+            player_adv_data = []
+            for stat in player_advanced_stats:
+                row_data = {}
+                for col in columns:
+                    row_data[col] = getattr(stat, col)
+                player_adv_data.append(row_data)
+            st.dataframe(player_adv_data)
+    
+    # Team Advanced Stats tab
+    with tabs[11]:
+        team_advanced_stats = Session().query(TeamAdvancedStats).all()
+        if team_advanced_stats:
+            # Get column names from model
+            columns = [column.key for column in inspect(TeamAdvancedStats).attrs]
+            
+            team_adv_data = []
+            for stat in team_advanced_stats:
+                row_data = {}
+                for col in columns:
+                    row_data[col] = getattr(stat, col)
+                team_adv_data.append(row_data)
+            st.dataframe(team_adv_data)
 
 if __name__ == "__main__":
     main()
