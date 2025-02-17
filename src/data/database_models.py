@@ -138,21 +138,11 @@ class Game(Base):
     # Relationship to photos - allows multiple photos per game
     photos = relationship("Photo", back_populates="game")
 
-    # Split officials into 3 columns each, making them nullable
-    official1_id = Column(Integer, nullable=True)
-    official1_name = Column(String, nullable=True)
-    official1_number = Column(Integer, nullable=True)
-    
-    official2_id = Column(Integer, nullable=True)
-    official2_name = Column(String, nullable=True)
-    official2_number = Column(Integer, nullable=True)
-    
-    official3_id = Column(Integer, nullable=True)
-    official3_name = Column(String, nullable=True)
-    official3_number = Column(Integer, nullable=True)
-
     # Add relationship to inactive players
     inactive_players = relationship("InactivePlayer", back_populates="game")
+
+    # Add this relationship
+    officials = relationship("Official", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -209,6 +199,18 @@ class InactivePlayer(Base):
     
     # Relationship to game using game_id
     game = relationship("Game", back_populates="inactive_players", foreign_keys=[game_id])
+
+class Official(Base):
+    __tablename__ = 'officials'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    official_id = Column(Integer, nullable=False)
+    name = Column(String(100), nullable=False)
+    jersey_num = Column(Integer, nullable=False)
+    
+    # Relationship to game
+    game = relationship("Game", back_populates="officials")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """

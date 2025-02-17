@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base, InactivePlayer
+from src.data.database_models import Game, Photo, Base, InactivePlayer, Official
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -191,27 +191,6 @@ def show_add_game():
                                 # Add detailed stats
                                 attendance=detailed_stats['attendance'],
                                 duration_minutes=detailed_stats['duration'],
-                                # Officials data
-                                official1_id=officials[0]['id'],
-                                official1_name=f"{officials[0]['first_name']} {officials[0]['last_name']}",
-                                official1_number=int(officials[0]['jersey_num'].strip()),
-                                
-                                official2_id=officials[1]['id'],
-                                official2_name=f"{officials[1]['first_name']} {officials[1]['last_name']}",
-                                official2_number=int(officials[1]['jersey_num'].strip()),
-                                
-                                official3_id=officials[2]['id'],
-                                official3_name=f"{officials[2]['first_name']} {officials[2]['last_name']}",
-                                official3_number=int(officials[2]['jersey_num'].strip()),
-                                # Quarter scores
-                                home_q1=detailed_stats['home_q1'],
-                                home_q2=detailed_stats['home_q2'],
-                                home_q3=detailed_stats['home_q3'],
-                                home_q4=detailed_stats['home_q4'],
-                                away_q1=detailed_stats['away_q1'],
-                                away_q2=detailed_stats['away_q2'],
-                                away_q3=detailed_stats['away_q3'],
-                                away_q4=detailed_stats['away_q4'],
                                 # Team stats
                                 home_paint_points=detailed_stats['home_paint_points'],
                                 away_paint_points=detailed_stats['away_paint_points'],
@@ -232,22 +211,23 @@ def show_add_game():
                                 home_team_losses=detailed_stats['home_team_losses'],
                                 away_team_wins=detailed_stats['away_team_wins'],
                                 away_team_losses=detailed_stats['away_team_losses'],
-                                # Series data (post-game)
+                                # Series data
                                 home_team_series_wins=detailed_stats['home_team_series_wins'],
                                 home_team_series_losses=detailed_stats['home_team_series_losses'],
                                 series_leader=detailed_stats['series_leader'],
-                                # Series data (pre-game) - Using calculated series_data
+                                # Pre-game series data
                                 pregame_home_team_series_wins=series_data['pregame_home_wins'],
                                 pregame_home_team_series_losses=series_data['pregame_home_losses'],
                                 pregame_series_leader=series_data['pregame_leader'],
                                 pregame_series_record=series_data['pregame_series_record'],
-                                # Last meeting data - keeping scores and IDs separate
+                                # Last meeting data
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
                                 last_meeting_game_date=last_meeting_date,
                                 last_meeting_team1_id=detailed_stats['last_meeting_home_team_id'],
                                 last_meeting_team2_id=detailed_stats['last_meeting_visitor_team_id'],
                                 last_meeting_team1_score=detailed_stats['last_meeting_home_points'],
                                 last_meeting_team2_score=detailed_stats['last_meeting_visitor_points'],
+                                # Additional stats
                                 home_team_turnovers=detailed_stats['home_team_turnovers'],
                                 away_team_turnovers=detailed_stats['away_team_turnovers'],
                                 home_total_turnovers=detailed_stats['home_total_turnovers'],
@@ -282,6 +262,16 @@ def show_add_game():
                                     team_id=team_id  # Use team_id instead of team_abbrev
                                 )
                                 session.add(inactive_player)
+
+                            # Add officials separately
+                            for official in detailed_stats['officials_complete']:
+                                new_official = Official(
+                                    game_id=str(game_data['game_id']),
+                                    official_id=official['id'],
+                                    name=f"{official['first_name']} {official['last_name']}",
+                                    jersey_num=int(official['jersey_num'].strip())
+                                )
+                                session.add(new_official)
 
                             session.add(new_game)
                             session.commit()
@@ -491,6 +481,7 @@ def show_database_preview():
     # Add table selection
     table_options = {
         "Games": Game,
+        "Officials": Official,
         "Inactive Players": InactivePlayer,
         "Photos": Photo
     }
