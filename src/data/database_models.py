@@ -128,9 +128,6 @@ class Game(Base):
     lead_changes = Column(Integer, CheckConstraint('lead_changes >= 0'))
     times_tied = Column(Integer, CheckConstraint('times_tied >= 0'))
     
-    # Game Details
-    inactive_players = Column(Text)  # Stored as JSON string
-    
     # User Input
     seat_section = Column(String(20))
     seat_row = Column(String(10))
@@ -153,6 +150,9 @@ class Game(Base):
     official3_id = Column(Integer, nullable=True)
     official3_name = Column(String, nullable=True)
     official3_number = Column(Integer, nullable=True)
+
+    # Add relationship to inactive players
+    inactive_players = relationship("InactivePlayer", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -196,6 +196,19 @@ class Photo(Base):
 
     def __repr__(self):
         return f"<Photo {self.id} for Game {self.game_id}>"
+
+class InactivePlayer(Base):
+    __tablename__ = 'inactive_players'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    first_name = Column(String(50))
+    last_name = Column(String(50))
+    jersey_num = Column(Integer)
+    team_id = Column(Integer, nullable=False)  # Changed from team_abbrev to team_id
+    
+    # Relationship to game using game_id
+    game = relationship("Game", back_populates="inactive_players", foreign_keys=[game_id])
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """

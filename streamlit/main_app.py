@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base
+from src.data.database_models import Game, Photo, Base, InactivePlayer
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -168,16 +168,13 @@ def show_add_game():
                         # Get the officials data from detailed_stats
                         officials = detailed_stats['officials_complete']
 
-                        # Convert inactive_players to JSON string
-                        inactive_players = json.dumps(detailed_stats['inactive_players'])
-
                         # Create new game in database
                         session = Session()
                         try:
                             # Convert the string to a datetime.date object
                             last_meeting_date = datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').date()
 
-                            # Parse officials into separate fields
+                            # Create new game without inactive_players field
                             new_game = Game(
                                 date=date,
                                 home_team=game_data['home_team'],
@@ -194,8 +191,6 @@ def show_add_game():
                                 # Add detailed stats
                                 attendance=detailed_stats['attendance'],
                                 duration_minutes=detailed_stats['duration'],
-                                # Use the converted inactive_players
-                                inactive_players=inactive_players,
                                 # Officials data
                                 official1_id=officials[0]['id'],
                                 official1_name=f"{officials[0]['first_name']} {officials[0]['last_name']}",
@@ -271,6 +266,22 @@ def show_add_game():
                                 if ot_key in detailed_stats:
                                     setattr(new_game, f'home_ot{ot}', detailed_stats[f'home_ot{ot}'])
                                     setattr(new_game, f'away_ot{ot}', detailed_stats[f'away_ot{ot}'])
+
+                            # Add inactive players
+                            for player in detailed_stats['inactive_players']:
+                                # Determine team_id based on team_abbrev
+                                team_id = (detailed_stats['home_team_id'] 
+                                           if player['team_abbrev'] == detailed_stats['home_team_abbrev']
+                                           else detailed_stats['visitor_team_id'])
+                                
+                                inactive_player = InactivePlayer(
+                                    game_id=str(game_data['game_id']),
+                                    first_name=player['first_name'],
+                                    last_name=player['last_name'],
+                                    jersey_num=int(player['jersey_num'].strip()),
+                                    team_id=team_id  # Use team_id instead of team_abbrev
+                                )
+                                session.add(inactive_player)
 
                             session.add(new_game)
                             session.commit()
@@ -477,21 +488,30 @@ def show_database_preview():
     """Show a preview of the database structure and contents."""
     st.header("Database Preview")
     
+    # Add table selection
+    table_options = {
+        "Games": Game,
+        "Inactive Players": InactivePlayer,
+        "Photos": Photo
+    }
+    
+    selected_table = st.selectbox("Select Table", options=list(table_options.keys()))
+    selected_model = table_options[selected_table]
+    
     session = Session()
     try:
-        # Get the most recent 20 games
-        games = session.query(Game).order_by(Game.date.desc()).limit(20).all()
+        # Get the most recent 20 records from selected table
+        records = session.query(selected_model).order_by(selected_model.id.desc()).limit(20).all()
         
         # Create type row
         type_info = {}
-        for column in Game.__table__.columns:
+        for column in selected_model.__table__.columns:
             if not column.name.startswith('_'):
                 type_str = str(column.type).upper()
                 
                 if 'INTEGER' in type_str:
                     type_info[column.name] = "Integer"
                 elif 'VARCHAR' in type_str or 'STRING' in type_str:
-                    # Safely extract length if it exists
                     if '(' in type_str and ')' in type_str:
                         try:
                             length = type_str.split('(')[1].split(')')[0]
@@ -511,24 +531,24 @@ def show_database_preview():
                 else:
                     type_info[column.name] = str(column.type)
         
-        # Convert games to list of dicts
-        games_data = []
-        for game in games:
-            game_dict = {
-                column.name: getattr(game, column.name)
-                for column in Game.__table__.columns
+        # Convert records to list of dicts
+        data = []
+        for record in records:
+            record_dict = {
+                column.name: getattr(record, column.name)
+                for column in selected_model.__table__.columns
                 if not column.name.startswith('_')
             }
-            games_data.append(game_dict)
+            data.append(record_dict)
         
         # Add type example as first row
-        games_data.insert(0, type_info)
+        data.insert(0, type_info)
         
         # Convert to DataFrame
-        df = pd.DataFrame(games_data)
+        df = pd.DataFrame(data)
         
         # Display options
-        st.subheader("Most Recent Games (with Data Types)")
+        st.subheader(f"Most Recent {selected_table} (with Data Types)")
         st.dataframe(df, use_container_width=True)
         
         # Show total column count

@@ -69,6 +69,7 @@
 - [ ] Improve code documentation
 - [ ] Add unit tests for game calculations
 - [ ] Optimize database queries
+- [ ] Add player_ids to inactive players table (requires additional NBA API integration)
 
 ### Future Features
 - [ ] Add photo gallery
