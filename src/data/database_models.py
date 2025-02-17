@@ -67,19 +67,13 @@ class Game(Base):
     pregame_series_leader = Column(String(3))
     pregame_series_record = Column(String(10))
     
-    # Last Meeting
+    # Simple last meeting fields
     last_meeting_game_id = Column(String)
-    last_meeting_game_date = Column(String)
-    last_meeting_home_team_id = Column(Integer)
-    last_meeting_home_city = Column(String)
-    last_meeting_home_name = Column(String)
-    last_meeting_home_abbrev = Column(String)
-    last_meeting_home_points = Column(Integer)
-    last_meeting_visitor_team_id = Column(Integer)
-    last_meeting_visitor_city = Column(String)
-    last_meeting_visitor_name = Column(String)
-    last_meeting_visitor_abbrev = Column(String)
-    last_meeting_visitor_points = Column(Integer)
+    last_meeting_game_date = Column(Date)
+    last_meeting_team1_id = Column(Integer)
+    last_meeting_team2_id = Column(Integer)
+    last_meeting_team1_score = Column(Integer)
+    last_meeting_team2_score = Column(Integer)
     
     # Game Stats
     home_q1 = Column(Integer, CheckConstraint('home_q1 >= 0'))
@@ -135,8 +129,6 @@ class Game(Base):
     times_tied = Column(Integer, CheckConstraint('times_tied >= 0'))
     
     # Game Details
-    officials = Column(String)  # Stored as JSON string
-    officials_complete = Column(Text)  # Stored as JSON string
     inactive_players = Column(Text)  # Stored as JSON string
     
     # User Input
@@ -148,6 +140,19 @@ class Game(Base):
     
     # Relationship to photos - allows multiple photos per game
     photos = relationship("Photo", back_populates="game")
+
+    # Split officials into 3 columns each, making them nullable
+    official1_id = Column(Integer, nullable=True)
+    official1_name = Column(String, nullable=True)
+    official1_number = Column(Integer, nullable=True)
+    
+    official2_id = Column(Integer, nullable=True)
+    official2_name = Column(String, nullable=True)
+    official2_number = Column(Integer, nullable=True)
+    
+    official3_id = Column(Integer, nullable=True)
+    official3_name = Column(String, nullable=True)
+    official3_number = Column(Integer, nullable=True)
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"

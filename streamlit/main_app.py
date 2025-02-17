@@ -165,13 +165,19 @@ def show_add_game():
                             away_team_abbrev=detailed_stats['away_team_abbrev']
                         )
                         
+                        # Get the officials data from detailed_stats
+                        officials = detailed_stats['officials_complete']
+
+                        # Convert inactive_players to JSON string
+                        inactive_players = json.dumps(detailed_stats['inactive_players'])
+
                         # Create new game in database
                         session = Session()
                         try:
-                            # Format the last meeting date to just YYYY-MM-DD
-                            last_meeting_date = datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').strftime('%Y-%m-%d')
+                            # Convert the string to a datetime.date object
+                            last_meeting_date = datetime.strptime(detailed_stats['last_meeting_game_date'], '%Y-%m-%dT%H:%M:%S').date()
 
-                            # Create new game instance with all data
+                            # Parse officials into separate fields
                             new_game = Game(
                                 date=date,
                                 home_team=game_data['home_team'],
@@ -188,9 +194,20 @@ def show_add_game():
                                 # Add detailed stats
                                 attendance=detailed_stats['attendance'],
                                 duration_minutes=detailed_stats['duration'],
-                                officials=detailed_stats['officials'],
-                                officials_complete=json.dumps(detailed_stats['officials_complete']),
-                                inactive_players=json.dumps(detailed_stats['inactive_players']),
+                                # Use the converted inactive_players
+                                inactive_players=inactive_players,
+                                # Officials data
+                                official1_id=officials[0]['id'],
+                                official1_name=f"{officials[0]['first_name']} {officials[0]['last_name']}",
+                                official1_number=int(officials[0]['jersey_num'].strip()),
+                                
+                                official2_id=officials[1]['id'],
+                                official2_name=f"{officials[1]['first_name']} {officials[1]['last_name']}",
+                                official2_number=int(officials[1]['jersey_num'].strip()),
+                                
+                                official3_id=officials[2]['id'],
+                                official3_name=f"{officials[2]['first_name']} {officials[2]['last_name']}",
+                                official3_number=int(officials[2]['jersey_num'].strip()),
                                 # Quarter scores
                                 home_q1=detailed_stats['home_q1'],
                                 home_q2=detailed_stats['home_q2'],
@@ -211,7 +228,7 @@ def show_add_game():
                                 away_largest_lead=detailed_stats['away_largest_lead'],
                                 # New fields
                                 season=format_season(detailed_stats['season'][:4]),
-                                national_tv=detailed_stats['national_tv'],
+                                national_tv=detailed_stats['national_tv'] if detailed_stats['national_tv'] else 'Local',
                                 home_team_id=detailed_stats['home_team_id'],
                                 away_team_id=detailed_stats['visitor_team_id'],
                                 home_team_abbrev=detailed_stats['home_team_abbrev'],
@@ -229,19 +246,13 @@ def show_add_game():
                                 pregame_home_team_series_losses=series_data['pregame_home_losses'],
                                 pregame_series_leader=series_data['pregame_leader'],
                                 pregame_series_record=series_data['pregame_series_record'],
-                                # Last meeting data with formatted date
+                                # Last meeting data - keeping scores and IDs separate
                                 last_meeting_game_id=detailed_stats['last_meeting_game_id'],
-                                last_meeting_game_date=last_meeting_date,  # Now just stores the date
-                                last_meeting_home_team_id=detailed_stats['last_meeting_home_team_id'],
-                                last_meeting_home_city=detailed_stats['last_meeting_home_city'],
-                                last_meeting_home_name=detailed_stats['last_meeting_home_name'],
-                                last_meeting_home_abbrev=detailed_stats['last_meeting_home_abbrev'],
-                                last_meeting_home_points=detailed_stats['last_meeting_home_points'],
-                                last_meeting_visitor_team_id=detailed_stats['last_meeting_visitor_team_id'],
-                                last_meeting_visitor_city=detailed_stats['last_meeting_visitor_city'],
-                                last_meeting_visitor_name=detailed_stats['last_meeting_visitor_name'],
-                                last_meeting_visitor_abbrev=detailed_stats['last_meeting_visitor_abbrev'],
-                                last_meeting_visitor_points=detailed_stats['last_meeting_visitor_points'],
+                                last_meeting_game_date=last_meeting_date,
+                                last_meeting_team1_id=detailed_stats['last_meeting_home_team_id'],
+                                last_meeting_team2_id=detailed_stats['last_meeting_visitor_team_id'],
+                                last_meeting_team1_score=detailed_stats['last_meeting_home_points'],
+                                last_meeting_team2_score=detailed_stats['last_meeting_visitor_points'],
                                 home_team_turnovers=detailed_stats['home_team_turnovers'],
                                 away_team_turnovers=detailed_stats['away_team_turnovers'],
                                 home_total_turnovers=detailed_stats['home_total_turnovers'],
