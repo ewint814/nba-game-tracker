@@ -186,7 +186,7 @@ class NBAApiClient:
                 ],
                 
                 # Last Meeting
-                'last_meeting_game_id': last_meeting[0],
+                'last_meeting_game_id': last_meeting[1],
                 'last_meeting_game_date': last_meeting[2],
                 'last_meeting_home_team_id': last_meeting[3],
                 'last_meeting_home_city': last_meeting[4],

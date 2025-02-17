@@ -195,8 +195,54 @@ def test_series_calculation():
     print(f"• Pre-game series: {result['pregame_series_record']}")
     print(f"• Pre-game leader: {result['pregame_leader']}")
 
+def test_last_meeting_structure():
+    """Test to examine the last meeting data structure."""
+    print("\nExamining Last Meeting Data")
+    print("=" * 50)
+    
+    try:
+        # Test with known game
+        game_id = "0022400773"  # Use the same test game ID
+        
+        # Get detailed box score data
+        box = boxscoresummaryv2.BoxScoreSummaryV2(game_id=game_id)
+        box_data = box.get_dict()
+        
+        # Find the LastMeeting result set
+        for result_set in box_data['resultSets']:
+            if result_set['name'] == 'LastMeeting':
+                print("\nLast Meeting Data Structure:")
+                print("=" * 50)
+                
+                # Print headers with indices
+                print("\nHeaders:")
+                headers = result_set['headers']
+                for i, header in enumerate(headers):
+                    print(f"{i}: {header}")
+                
+                # Print data with headers
+                print("\nData:")
+                if result_set['rowSet']:
+                    row = result_set['rowSet'][0]
+                    for i, value in enumerate(row):
+                        print(f"{headers[i]}: {value}")
+                else:
+                    print("No last meeting data found!")
+                
+                # Print raw data for debugging
+                print("\nRaw Data:")
+                pprint(result_set['rowSet'])
+                
+                break
+        else:
+            print("No LastMeeting result set found!")
+            
+    except Exception as e:
+        print(f"\nError: {str(e)}")
+
 if __name__ == "__main__":
     # test_nba_api_raw()
     # test_overtime_structure()
     # test_series_data_structure()
-    test_series_calculation() 
+    # test_series_calculation()
+    test_last_meeting_structure() 

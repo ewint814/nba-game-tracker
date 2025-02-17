@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, Float, ForeignKey, Text, Time, Enum, CheckConstraint, Interval
+from sqlalchemy import create_engine, Column, Integer, String, Date, Float, ForeignKey, Text, Time, Enum, CheckConstraint, Interval, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
 import enum
@@ -57,23 +57,7 @@ class Game(Base):
     away_team_losses = Column(Integer, CheckConstraint('away_team_losses >= 0'))
     
     # Season Series
-    home_team_series_wins = Column(Integer, CheckConstraint('home_team_series_wins >= 0'))
-    home_team_series_losses = Column(Integer, CheckConstraint('home_team_series_losses >= 0'))
-    series_leader = Column(String(3))
-    
-    # Season Series (pre-game)
-    pregame_home_team_series_wins = Column(Integer, CheckConstraint('pregame_home_team_series_wins >= 0'))
-    pregame_home_team_series_losses = Column(Integer, CheckConstraint('pregame_home_team_series_losses >= 0'))
-    pregame_series_leader = Column(String(3))
-    pregame_series_record = Column(String(10))
-    
-    # Simple last meeting fields
-    last_meeting_game_id = Column(String)
-    last_meeting_game_date = Column(Date)
-    last_meeting_team1_id = Column(Integer)
-    last_meeting_team2_id = Column(Integer)
-    last_meeting_team1_score = Column(Integer)
-    last_meeting_team2_score = Column(Integer)
+    series_stats = relationship("SeriesStats", back_populates="game")
     
     # Game flow statistics
     home_largest_lead = Column(Integer)
@@ -102,6 +86,9 @@ class Game(Base):
 
     # Add this relationship
     quarter_scores = relationship("QuarterScores", back_populates="game")
+
+    # Add relationships
+    last_meeting = relationship("LastMeeting", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -199,6 +186,40 @@ class TeamStats(Base):
     points_off_to = Column(Integer, CheckConstraint('points_off_to >= 0'))
     
     game = relationship("Game", back_populates="team_stats")
+
+class SeriesStats(Base):
+    __tablename__ = 'series_stats'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    
+    # Pre-game series data
+    pregame_home_team_series_wins = Column(Integer, CheckConstraint('pregame_home_team_series_wins >= 0'))
+    pregame_home_team_series_losses = Column(Integer, CheckConstraint('pregame_home_team_series_losses >= 0'))
+    pregame_series_leader = Column(String(3))
+    pregame_series_record = Column(String(10))  # e.g., "2-1"
+    
+    # Post-game series data
+    postgame_home_team_series_wins = Column(Integer, CheckConstraint('postgame_home_team_series_wins >= 0'))
+    postgame_home_team_series_losses = Column(Integer, CheckConstraint('postgame_home_team_series_losses >= 0'))
+    postgame_series_leader = Column(String(3))
+    postgame_series_record = Column(String(10))  # e.g., "2-2"
+    
+    game = relationship("Game", back_populates="series_stats")
+
+class LastMeeting(Base):
+    __tablename__ = 'last_meetings'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    last_meeting_game_id = Column(String)
+    last_meeting_game_date = Column(Date)
+    home_team_id = Column(Integer)  # Renamed from team1_id
+    away_team_id = Column(Integer)  # Renamed from team2_id
+    home_team_score = Column(Integer)  # Renamed from team1_score
+    away_team_score = Column(Integer)  # Renamed from team2_score
+    
+    game = relationship("Game", back_populates="last_meeting")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """
