@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base, InactivePlayer, Official
+from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -240,12 +240,33 @@ def show_add_game():
                                 times_tied=detailed_stats['times_tied']
                             )
 
+                            # Add quarter scores
+                            quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+                            for quarter in quarters:
+                                q_num = quarter[1]  # get the number
+                                new_quarter = QuarterScores(
+                                    game_id=str(game_data['game_id']),
+                                    period=quarter,
+                                    home_team_id=detailed_stats['home_team_id'],
+                                    away_team_id=detailed_stats['visitor_team_id'],
+                                    home_score=detailed_stats[f'home_q{q_num}'],
+                                    away_score=detailed_stats[f'away_q{q_num}']
+                                )
+                                session.add(new_quarter)
+                            
                             # Add overtime periods if they exist
-                            for ot in range(1, 11):
-                                ot_key = f'home_ot{ot}'
-                                if ot_key in detailed_stats:
-                                    setattr(new_game, f'home_ot{ot}', detailed_stats[f'home_ot{ot}'])
-                                    setattr(new_game, f'away_ot{ot}', detailed_stats[f'away_ot{ot}'])
+                            ot = 1
+                            while f'home_ot{ot}' in detailed_stats and detailed_stats[f'home_ot{ot}'] is not None:
+                                new_ot = QuarterScores(
+                                    game_id=str(game_data['game_id']),
+                                    period=f'OT{ot}',
+                                    home_team_id=detailed_stats['home_team_id'],
+                                    away_team_id=detailed_stats['visitor_team_id'],
+                                    home_score=detailed_stats[f'home_ot{ot}'],
+                                    away_score=detailed_stats[f'away_ot{ot}']
+                                )
+                                session.add(new_ot)
+                                ot += 1
 
                             # Add inactive players
                             for player in detailed_stats['inactive_players']:
@@ -481,6 +502,7 @@ def show_database_preview():
     # Add table selection
     table_options = {
         "Games": Game,
+        "Quarter Scores": QuarterScores,
         "Officials": Official,
         "Inactive Players": InactivePlayer,
         "Photos": Photo

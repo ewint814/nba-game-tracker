@@ -75,39 +75,6 @@ class Game(Base):
     last_meeting_team1_score = Column(Integer)
     last_meeting_team2_score = Column(Integer)
     
-    # Game Stats
-    home_q1 = Column(Integer, CheckConstraint('home_q1 >= 0'))
-    home_q2 = Column(Integer, CheckConstraint('home_q2 >= 0'))
-    home_q3 = Column(Integer, CheckConstraint('home_q3 >= 0'))
-    home_q4 = Column(Integer, CheckConstraint('home_q4 >= 0'))
-    away_q1 = Column(Integer, CheckConstraint('away_q1 >= 0'))
-    away_q2 = Column(Integer, CheckConstraint('away_q2 >= 0'))
-    away_q3 = Column(Integer, CheckConstraint('away_q3 >= 0'))
-    away_q4 = Column(Integer, CheckConstraint('away_q4 >= 0'))
-    
-    # Overtime Periods (nullable)
-    home_ot1 = Column(Integer, CheckConstraint('home_ot1 >= 0'))
-    home_ot2 = Column(Integer, CheckConstraint('home_ot2 >= 0'))
-    home_ot3 = Column(Integer, CheckConstraint('home_ot3 >= 0'))
-    home_ot4 = Column(Integer, CheckConstraint('home_ot4 >= 0'))
-    home_ot5 = Column(Integer, CheckConstraint('home_ot5 >= 0'))
-    home_ot6 = Column(Integer, CheckConstraint('home_ot6 >= 0'))
-    home_ot7 = Column(Integer, CheckConstraint('home_ot7 >= 0'))
-    home_ot8 = Column(Integer, CheckConstraint('home_ot8 >= 0'))
-    home_ot9 = Column(Integer, CheckConstraint('home_ot9 >= 0'))
-    home_ot10 = Column(Integer, CheckConstraint('home_ot10 >= 0'))
-    
-    away_ot1 = Column(Integer, CheckConstraint('away_ot1 >= 0'))
-    away_ot2 = Column(Integer, CheckConstraint('away_ot2 >= 0'))
-    away_ot3 = Column(Integer, CheckConstraint('away_ot3 >= 0'))
-    away_ot4 = Column(Integer, CheckConstraint('away_ot4 >= 0'))
-    away_ot5 = Column(Integer, CheckConstraint('away_ot5 >= 0'))
-    away_ot6 = Column(Integer, CheckConstraint('away_ot6 >= 0'))
-    away_ot7 = Column(Integer, CheckConstraint('away_ot7 >= 0'))
-    away_ot8 = Column(Integer, CheckConstraint('away_ot8 >= 0'))
-    away_ot9 = Column(Integer, CheckConstraint('away_ot9 >= 0'))
-    away_ot10 = Column(Integer, CheckConstraint('away_ot10 >= 0'))
-    
     # Team Stats
     home_paint_points = Column(Integer, CheckConstraint('home_paint_points >= 0'))
     away_paint_points = Column(Integer, CheckConstraint('away_paint_points >= 0'))
@@ -143,6 +110,9 @@ class Game(Base):
 
     # Add this relationship
     officials = relationship("Official", back_populates="game")
+
+    # Add this relationship
+    quarter_scores = relationship("QuarterScores", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -211,6 +181,19 @@ class Official(Base):
     
     # Relationship to game
     game = relationship("Game", back_populates="officials")
+
+class QuarterScores(Base):
+    __tablename__ = 'quarter_scores'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    period = Column(String(3), nullable=False)  # Q1, Q2, Q3, Q4, OT1, OT2, etc.
+    home_team_id = Column(Integer, nullable=False)
+    away_team_id = Column(Integer, nullable=False)
+    home_score = Column(Integer, CheckConstraint('home_score >= 0'))
+    away_score = Column(Integer, CheckConstraint('away_score >= 0'))
+    
+    game = relationship("Game", back_populates="quarter_scores")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """
