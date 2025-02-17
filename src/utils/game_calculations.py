@@ -45,25 +45,35 @@ def calculate_series_stats(home_score, away_score, postgame_home_wins, postgame_
     Returns:
         dict: Dictionary containing pre-game series statistics
     """
-    # Calculate pre-game record by removing current game result
-    if home_score > away_score:
-        pregame_home_wins = postgame_home_wins - 1
-        pregame_home_losses = postgame_home_losses
+    # Determine if this game's result is included in the postgame stats
+    game_counted = (home_score > away_score and postgame_home_wins > 0) or (away_score > home_score and postgame_home_losses > 0)
+    
+    # Calculate pre-game stats by removing this game's result if needed
+    if game_counted:
+        if home_score > away_score:
+            pregame_home_wins = postgame_home_wins - 1
+            pregame_home_losses = postgame_home_losses
+        else:
+            pregame_home_wins = postgame_home_wins
+            pregame_home_losses = postgame_home_losses - 1
     else:
         pregame_home_wins = postgame_home_wins
-        pregame_home_losses = postgame_home_losses - 1
+        pregame_home_losses = postgame_home_losses
     
-    # Calculate pre-game leader
+    # Determine pre-game leader
     if pregame_home_wins > pregame_home_losses:
         pregame_leader = home_team_abbrev
     elif pregame_home_wins < pregame_home_losses:
         pregame_leader = away_team_abbrev
     else:
-        pregame_leader = None
-        
+        pregame_leader = "Tied"
+    
+    # Format pre-game series record
+    pregame_series_record = f"{pregame_home_wins}-{pregame_home_losses}"
+    
     return {
         'pregame_home_wins': pregame_home_wins,
         'pregame_home_losses': pregame_home_losses,
         'pregame_leader': pregame_leader,
-        'pregame_series_record': f"{pregame_home_wins}-{pregame_home_losses}"
+        'pregame_series_record': pregame_series_record
     } 

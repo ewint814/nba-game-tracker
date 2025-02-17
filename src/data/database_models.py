@@ -24,71 +24,40 @@ class Game(Base):
     """
     __tablename__ = 'games'
 
-    # Primary key for unique game identification
     id = Column(Integer, primary_key=True)
-    
-    # When the game was played
-    date = Column(Date, nullable=False)
-    
-    # Game Details (from NBA API)
-    home_team = Column(String(50), nullable=False)
-    away_team = Column(String(50), nullable=False)
-    home_score = Column(Integer, CheckConstraint('home_score >= 0'))
-    away_score = Column(Integer, CheckConstraint('away_score >= 0'))
-    arena = Column(String(100), nullable=False)
     game_id = Column(String(20), unique=True, nullable=False)
+    date = Column(Date, nullable=False)
+    season = Column(String(7))  # e.g., "2023-24"
     
-    # Team Info
-    home_team_id = Column(Integer, nullable=False)
-    away_team_id = Column(Integer, nullable=False)
-    home_team_abbrev = Column(String(3), nullable=False)
-    away_team_abbrev = Column(String(3), nullable=False)
+    # Team Information
+    home_team = Column(String(50))
+    away_team = Column(String(50))
+    home_team_id = Column(Integer)
+    away_team_id = Column(Integer)
+    home_team_abbrev = Column(String(3))
+    away_team_abbrev = Column(String(3))
     
-    # Basic Game Info
-    season = Column(String(9), nullable=False)
-    attendance = Column(Integer, CheckConstraint('attendance >= 0'))
-    duration_minutes = Column(Integer, CheckConstraint('duration_minutes >= 0'))  # Total game duration in minutes
-    national_tv = Column(String(10))
+    # Score
+    home_score = Column(Integer)
+    away_score = Column(Integer)
     
-    # Team Records
-    home_team_wins = Column(Integer, CheckConstraint('home_team_wins >= 0'))
-    home_team_losses = Column(Integer, CheckConstraint('home_team_losses >= 0'))
-    away_team_wins = Column(Integer, CheckConstraint('away_team_wins >= 0'))
-    away_team_losses = Column(Integer, CheckConstraint('away_team_losses >= 0'))
-    
-    # Season Series
-    series_stats = relationship("SeriesStats", back_populates="game")
-    
-    # Game flow statistics
-    home_largest_lead = Column(Integer)
-    away_largest_lead = Column(Integer)
-    lead_changes = Column(Integer)
-    times_tied = Column(Integer)
-    
-    # Team Stats
-    team_stats = relationship("TeamStats", back_populates="game")
-    
-    # User Input
+    # Personal attendance details (keeping for now)
     seat_section = Column(String(20))
     seat_row = Column(String(10))
     seat_number = Column(String(10))
     attended_with = Column(String(200))
     notes = Column(Text)
     
-    # Relationship to photos - allows multiple photos per game
-    photos = relationship("Photo", back_populates="game")
-
-    # Add relationship to inactive players
-    inactive_players = relationship("InactivePlayer", back_populates="game")
-
-    # Add this relationship
-    officials = relationship("Official", back_populates="game")
-
-    # Add this relationship
-    quarter_scores = relationship("QuarterScores", back_populates="game")
-
-    # Add relationships
+    # Relationships
+    venue_info = relationship("VenueInfo", back_populates="game", uselist=False)
+    game_flow = relationship("GameFlow", back_populates="game", uselist=False)
+    team_stats = relationship("TeamStats", back_populates="game")
+    series_stats = relationship("SeriesStats", back_populates="game")
     last_meeting = relationship("LastMeeting", back_populates="game")
+    quarter_scores = relationship("QuarterScores", back_populates="game")
+    officials = relationship("Official", back_populates="game")
+    inactive_players = relationship("InactivePlayer", back_populates="game")
+    photos = relationship("Photo", back_populates="game")
 
     def __repr__(self):
         return f"<Game {self.date}: {self.away_team} @ {self.home_team}>"
@@ -220,6 +189,30 @@ class LastMeeting(Base):
     away_team_score = Column(Integer)  # Renamed from team2_score
     
     game = relationship("Game", back_populates="last_meeting")
+
+class VenueInfo(Base):
+    __tablename__ = 'venue_info'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    arena = Column(String(100))
+    attendance = Column(Integer)
+    duration_minutes = Column(Integer)
+    national_tv = Column(String(20))  # 'Local' or network name
+    
+    game = relationship("Game", back_populates="venue_info")
+
+class GameFlow(Base):
+    __tablename__ = 'game_flow'
+    
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(20), ForeignKey('games.game_id'), nullable=False)
+    home_largest_lead = Column(Integer)
+    away_largest_lead = Column(Integer)
+    lead_changes = Column(Integer)
+    times_tied = Column(Integer)
+    
+    game = relationship("Game", back_populates="game_flow")
 
 def init_db(db_path='sqlite:///basketball_tracker.db'):
     """

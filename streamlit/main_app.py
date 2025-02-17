@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import our modules
 from src.data.basketball_reference_scraper import BasketballReferenceScraper
-from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores, TeamStats, SeriesStats, LastMeeting
+from src.data.database_models import Game, Photo, Base, InactivePlayer, Official, QuarterScores, TeamStats, SeriesStats, LastMeeting, VenueInfo, GameFlow
 from src.data.nba_api_client import NBAApiClient
 from src.utils.game_calculations import format_season, calculate_series_stats
 
@@ -180,25 +180,12 @@ def show_add_game():
                                 seat_number=seat_number,
                                 attended_with=attended_with,
                                 notes=notes,
-                                arena=game_data['arena'],
                                 game_id=game_data['game_id'],
-                                attendance=detailed_stats['attendance'],
-                                duration_minutes=detailed_stats['duration'],
                                 season=format_season(detailed_stats['season'][:4]),
-                                national_tv=detailed_stats['national_tv'] if detailed_stats['national_tv'] else 'Local',
                                 home_team_id=detailed_stats['home_team_id'],
                                 away_team_id=detailed_stats['visitor_team_id'],
                                 home_team_abbrev=detailed_stats['home_team_abbrev'],
-                                away_team_abbrev=detailed_stats['away_team_abbrev'],
-                                home_team_wins=detailed_stats['home_team_wins'],
-                                home_team_losses=detailed_stats['home_team_losses'],
-                                away_team_wins=detailed_stats['away_team_wins'],
-                                away_team_losses=detailed_stats['away_team_losses'],
-                                # Game flow stats
-                                home_largest_lead=detailed_stats['home_largest_lead'],
-                                away_largest_lead=detailed_stats['away_largest_lead'],
-                                lead_changes=detailed_stats['lead_changes'],
-                                times_tied=detailed_stats['times_tied']
+                                away_team_abbrev=detailed_stats['away_team_abbrev']
                             )
 
                             # Create series stats
@@ -310,6 +297,26 @@ def show_add_game():
                                     jersey_num=int(official['jersey_num'].strip())
                                 )
                                 session.add(new_official)
+
+                            # Create venue info
+                            venue_info = VenueInfo(
+                                game_id=str(game_data['game_id']),
+                                arena=game_data['arena'],
+                                attendance=detailed_stats['attendance'],
+                                duration_minutes=int(detailed_stats['duration'].split(':')[0]) * 60 + int(detailed_stats['duration'].split(':')[1]),  # Convert "H:MM" to minutes
+                                national_tv=detailed_stats['national_tv'] if detailed_stats['national_tv'] else 'Local'
+                            )
+                            session.add(venue_info)
+
+                            # Create game flow stats
+                            game_flow = GameFlow(
+                                game_id=str(game_data['game_id']),
+                                lead_changes=detailed_stats['lead_changes'],
+                                times_tied=detailed_stats['times_tied'],
+                                home_largest_lead=detailed_stats['home_largest_lead'],
+                                away_largest_lead=detailed_stats['away_largest_lead']
+                            )
+                            session.add(game_flow)
 
                             session.add(new_game)
                             session.commit()
@@ -516,6 +523,8 @@ def show_database_preview():
     # Add table selection
     table_options = {
         "Games": Game,
+        "Venue Info": VenueInfo,
+        "Game Flow": GameFlow,
         "Quarter Scores": QuarterScores,
         "Team Stats": TeamStats,
         "Series Stats": SeriesStats,
