@@ -264,7 +264,6 @@ class TeamAdvancedStats(Base):
     team_name = Column(String(50))
     team_abbreviation = Column(String(3))
     team_city = Column(String(50))
-    minutes = Column(String(50))  # Changed to String to handle "MMM:SS" format
     
     # Advanced Stats
     e_off_rating = Column(Float)
@@ -279,11 +278,10 @@ class TeamAdvancedStats(Base):
     oreb_pct = Column(Float)
     dreb_pct = Column(Float)
     reb_pct = Column(Float)
-    e_tm_tov_pct = Column(Float)
-    tm_tov_pct = Column(Float)
+    e_tov_ratio = Column(Float)  # Renamed from e_tm_tov_pct
+    tov_ratio = Column(Float)    # Renamed from tm_tov_pct
     efg_pct = Column(Float)
     ts_pct = Column(Float)
-    usg_pct = Column(Float)
     e_usg_pct = Column(Float)
     e_pace = Column(Float)
     pace = Column(Float)
