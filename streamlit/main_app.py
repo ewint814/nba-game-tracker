@@ -326,33 +326,9 @@ def show_add_game():
                             for player in advanced_data['player_stats']:
                                 stats = player.get('statistics', {})
                                 
-                                # Parse status and reason from comment
-                                comment = player.get('comment', '').strip()
-                                status = None
-                                status_reason = None
-                                if comment:
-                                    if '-' in comment:
-                                        parts = comment.split('-', 1)
-                                        status = parts[0].strip()
-                                        status_reason = parts[1].strip()
-                                    else:
-                                        status = comment
-                                
-                                # Handle minutes - convert empty string to None
-                                minutes = stats.get('minutes')
-                                if minutes == '':
-                                    minutes = None
-                                
-                                # Convert 0.0 to None for advanced stats and handle PIE case
-                                stats_dict = {}
-                                for key, value in stats.items():
-                                    # Special handling for PIE (uppercase in API)
-                                    if key == 'PIE':
-                                        key = 'pie'
-                                    if isinstance(value, (int, float)) and value == 0:
-                                        stats_dict[key] = None
-                                    else:
-                                        stats_dict[key] = value
+                                # Get position from COMMENT field and determine if player was a starter
+                                position = player.get('comment', '').strip()
+                                starter = bool(position and position in ['F', 'G', 'C'])
                                 
                                 player_advanced = PlayerAdvancedStats(
                                     game_id=str(game_data['game_id']),
@@ -360,33 +336,31 @@ def show_add_game():
                                     player_id=player['personId'],
                                     first_name=player['firstName'],
                                     last_name=player['familyName'],
-                                    starting_position=player['position'] or None,
-                                    starter=bool(player['position']),
-                                    status=status,
-                                    status_reason=status_reason,
-                                    minutes=minutes,
-                                    pie=stats_dict.get('pie'),
-                                    estimated_offensive_rating=stats_dict.get('estimatedOffensiveRating'),
-                                    offensive_rating=stats_dict.get('offensiveRating'),
-                                    estimated_defensive_rating=stats_dict.get('estimatedDefensiveRating'),
-                                    defensive_rating=stats_dict.get('defensiveRating'),
-                                    estimated_net_rating=stats_dict.get('estimatedNetRating'),
-                                    net_rating=stats_dict.get('netRating'),
-                                    assist_percentage=stats_dict.get('assistPercentage'),
-                                    assist_to_turnover=stats_dict.get('assistToTurnover'),
-                                    assist_ratio=stats_dict.get('assistRatio'),
-                                    offensive_rebound_percentage=stats_dict.get('offensiveReboundPercentage'),
-                                    defensive_rebound_percentage=stats_dict.get('defensiveReboundPercentage'),
-                                    rebound_percentage=stats_dict.get('reboundPercentage'),
-                                    turnover_ratio=stats_dict.get('turnoverRatio'),
-                                    effective_field_goal_percentage=stats_dict.get('effectiveFieldGoalPercentage'),
-                                    true_shooting_percentage=stats_dict.get('trueShootingPercentage'),
-                                    usage_percentage=stats_dict.get('usagePercentage'),
-                                    estimated_usage_percentage=stats_dict.get('estimatedUsagePercentage'),
-                                    estimated_pace=stats_dict.get('estimatedPace'),
-                                    pace=stats_dict.get('pace'),
-                                    pace_per40=stats_dict.get('pacePer40'),
-                                    possessions=int(stats_dict.get('possessions')) if stats_dict.get('possessions') else None
+                                    position=position if starter else None,  # Only set position if they started
+                                    starter=starter,
+                                    minutes=stats.get('minutes'),
+                                    pie=stats.get('pie'),
+                                    estimated_offensive_rating=stats.get('estimatedOffensiveRating'),
+                                    offensive_rating=stats.get('offensiveRating'),
+                                    estimated_defensive_rating=stats.get('estimatedDefensiveRating'),
+                                    defensive_rating=stats.get('defensiveRating'),
+                                    estimated_net_rating=stats.get('estimatedNetRating'),
+                                    net_rating=stats.get('netRating'),
+                                    assist_percentage=stats.get('assistPercentage'),
+                                    assist_to_turnover=stats.get('assistToTurnover'),
+                                    assist_ratio=stats.get('assistRatio'),
+                                    offensive_rebound_percentage=stats.get('offensiveReboundPercentage'),
+                                    defensive_rebound_percentage=stats.get('defensiveReboundPercentage'),
+                                    rebound_percentage=stats.get('reboundPercentage'),
+                                    turnover_ratio=stats.get('turnoverRatio'),
+                                    effective_field_goal_percentage=stats.get('effectiveFieldGoalPercentage'),
+                                    true_shooting_percentage=stats.get('trueShootingPercentage'),
+                                    usage_percentage=stats.get('usagePercentage'),
+                                    estimated_usage_percentage=stats.get('estimatedUsagePercentage'),
+                                    estimated_pace=stats.get('estimatedPace'),
+                                    pace=stats.get('pace'),
+                                    pace_per40=stats.get('pacePer40'),
+                                    possessions=int(stats.get('possessions')) if stats.get('possessions') else None
                                 )
                                 session.add(player_advanced)
                             
@@ -459,20 +433,335 @@ def show_my_games():
         session.close()
 
 def show_statistics():
-    """Show statistics about attended games."""
-    st.header("Statistics")
+    """Show Celtics-focused statistics dashboard about attended games."""
+    st.header("Celtics Games Statistics Dashboard")
     
     session = Session()
     try:
         games = session.query(Game).all()
         
-        if games:
-            total_games = len(games)
-            st.metric("Total Games Attended", total_games)
-            
-            # Add more statistics here
-        else:
+        if not games:
             st.info("Add some games to see statistics!")
+            return
+
+        # Overall Records Section
+        st.subheader("Records")
+        col1, col2, col3 = st.columns(3)
+        
+        # Calculate overall record
+        total_games = len(games)
+        celtics_wins = sum(1 for game in games if 
+            (game.home_team == "Boston Celtics" and game.home_score > game.away_score) or
+            (game.away_team == "Boston Celtics" and game.away_score > game.home_score))
+        celtics_losses = total_games - celtics_wins
+        
+        # Home/Away records
+        home_games = [g for g in games if g.home_team == "Boston Celtics"]
+        away_games = [g for g in games if g.away_team == "Boston Celtics"]
+        
+        home_wins = sum(1 for g in home_games if g.home_score > g.away_score)
+        home_losses = len(home_games) - home_wins
+        away_wins = sum(1 for g in away_games if g.away_score > g.home_score)
+        away_losses = len(away_games) - away_wins
+        
+        with col1:
+            st.metric("Overall Record", f"{celtics_wins}-{celtics_losses}")
+            st.metric("Win Percentage", f"{(celtics_wins/total_games)*100:.1f}%")
+        
+        with col2:
+            st.metric("Home Record", f"{home_wins}-{home_losses}")
+            st.metric("Home Win %", f"{(home_wins/len(home_games)*100 if home_games else 0):.1f}%")
+            
+        with col3:
+            st.metric("Away Record", f"{away_wins}-{away_losses}")
+            st.metric("Away Win %", f"{(away_wins/len(away_games)*100 if away_games else 0):.1f}%")
+
+        # Season Records
+        st.subheader("Record by Season")
+        season_records = {}
+        for game in games:
+            season = game.season
+            if season not in season_records:
+                season_records[season] = {"wins": 0, "losses": 0}
+            celtics_won = (game.home_team == "Boston Celtics" and game.home_score > game.away_score) or \
+                         (game.away_team == "Boston Celtics" and game.away_score > game.home_score)
+            if celtics_won:
+                season_records[season]["wins"] += 1
+            else:
+                season_records[season]["losses"] += 1
+        
+        season_data = []
+        for season, record in sorted(season_records.items()):
+            win_pct = (record["wins"]/(record["wins"] + record["losses"]))*100
+            season_data.append({
+                "Season": season,
+                "Wins": record["wins"],
+                "Losses": record["losses"],
+                "Win %": f"{win_pct:.1f}%"
+            })
+        st.table(pd.DataFrame(season_data))
+
+        # Most Common Opponents
+        st.subheader("Most Common Opponents")
+        opponent_records = {}
+        for game in games:
+            opponent = game.away_team if game.home_team == "Boston Celtics" else game.home_team
+            if opponent not in opponent_records:
+                opponent_records[opponent] = {"games": 0, "wins": 0, "losses": 0}
+            opponent_records[opponent]["games"] += 1
+            celtics_won = (game.home_team == "Boston Celtics" and game.home_score > game.away_score) or \
+                         (game.away_team == "Boston Celtics" and game.away_score > game.home_score)
+            if celtics_won:
+                opponent_records[opponent]["wins"] += 1
+            else:
+                opponent_records[opponent]["losses"] += 1
+        
+        opponent_data = []
+        for opponent, record in sorted(opponent_records.items(), key=lambda x: x[1]["games"], reverse=True):
+            win_pct = (record["wins"]/(record["games"]))*100
+            opponent_data.append({
+                "Opponent": opponent,
+                "Games": record["games"],
+                "Record": f"{record['wins']}-{record['losses']}",
+                "Win %": f"{win_pct:.1f}%"
+            })
+        st.table(pd.DataFrame(opponent_data))
+
+        # Away Game Venues
+        st.subheader("Away Game Venues")
+        venue_records = {}
+        
+        # Join Game with VenueInfo to get arena information
+        games_with_venues = (
+            session.query(Game, VenueInfo)
+            .join(VenueInfo, Game.game_id == VenueInfo.game_id)
+            .all()
+        )
+        
+        for game, venue_info in games_with_venues:
+            if game.away_team == "Boston Celtics":
+                venue = f"{game.home_team} - {venue_info.arena}"
+                if venue not in venue_records:
+                    venue_records[venue] = {"games": 0, "wins": 0}
+                venue_records[venue]["games"] += 1
+                if game.away_score > game.home_score:
+                    venue_records[venue]["wins"] += 1
+        
+        venue_data = []
+        for venue, record in sorted(venue_records.items(), key=lambda x: x[1]["games"], reverse=True):
+            win_pct = (record["wins"]/(record["games"]))*100
+            venue_data.append({
+                "Venue": venue,
+                "Games": record["games"],
+                "Wins": record["wins"],
+                "Win %": f"{win_pct:.1f}%"
+            })
+        st.table(pd.DataFrame(venue_data))
+
+        # Game Duration Stats
+        st.subheader("Game Duration Statistics")
+        col1, col2 = st.columns(2)
+        
+        # Get durations from venue_info
+        games_with_duration = (
+            session.query(Game, VenueInfo)
+            .join(VenueInfo, Game.game_id == VenueInfo.game_id)
+            .filter(VenueInfo.duration_minutes.isnot(None))
+            .all()
+        )
+        
+        if games_with_duration:
+            durations = [venue.duration_minutes for _, venue in games_with_duration]
+            total_minutes = sum(durations)
+            avg_minutes = total_minutes / len(durations)
+            
+            with col1:
+                st.metric("Total Minutes Watched", f"{total_minutes:,.0f}")
+            with col2:
+                st.metric("Average Game Duration", f"{avg_minutes:.0f} minutes")
+
+        # Attendance Stats
+        st.subheader("Attendance Statistics")
+        attendances = [venue_info.attendance for game in games if venue_info.attendance]
+        if attendances:
+            avg_attendance = sum(attendances) / len(attendances)
+            total_attendance = sum(attendances)
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.metric("Average Attendance", f"{avg_attendance:,.0f}")
+            with col2:
+                st.metric("Total Attendance", f"{total_attendance:,.0f}")
+
+        # Streaks and Patterns
+        st.subheader("Streaks and Patterns")
+        
+        # Sort games by date for streak analysis
+        sorted_games = sorted(games, key=lambda x: x.date)
+        current_streak = 0
+        max_win_streak = 0
+        max_lose_streak = 0
+        current_win_streak = 0
+        current_lose_streak = 0
+        
+        for game in sorted_games:
+            celtics_won = (game.home_team == "Boston Celtics" and game.home_score > game.away_score) or \
+                         (game.away_team == "Boston Celtics" and game.away_score > game.home_score)
+            
+            if celtics_won:
+                current_streak = max(1, current_streak + 1)
+                current_win_streak = current_streak
+                current_lose_streak = 0
+                max_win_streak = max(max_win_streak, current_streak)
+            else:
+                current_streak = min(-1, current_streak - 1)
+                current_lose_streak = -current_streak
+                current_win_streak = 0
+                max_lose_streak = max(max_lose_streak, -current_streak)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Longest Win Streak", str(max_win_streak))
+        with col2:
+            st.metric("Longest Losing Streak", str(max_lose_streak))
+        with col3:
+            streak_text = f"{current_win_streak} wins" if current_win_streak > 0 else f"{current_lose_streak} losses"
+            st.metric("Current Streak", streak_text)
+
+        # Scoring Patterns
+        st.subheader("Scoring Patterns")
+        
+        close_games = []
+        blowouts = []
+        celtics_100_plus = []
+        celtics_110_plus = []
+        celtics_120_plus = []
+        overtime_games = []
+        
+        for game in games:
+            celtics_score = game.home_score if game.home_team == "Boston Celtics" else game.away_score
+            opponent_score = game.away_score if game.home_team == "Boston Celtics" else game.home_score
+            point_diff = abs(game.home_score - game.away_score)
+            
+            # Check for close games and blowouts
+            if point_diff <= 5:
+                close_games.append(game)
+            if point_diff >= 15:
+                blowouts.append(game)
+                
+            # Check for high scoring games
+            if celtics_score >= 100:
+                celtics_100_plus.append(game)
+            if celtics_score >= 110:
+                celtics_110_plus.append(game)
+            if celtics_score >= 120:
+                celtics_120_plus.append(game)
+            
+            # Check for overtime games using QuarterScores
+            ot_periods = [qs for qs in game.quarter_scores if qs.period.startswith('OT')]
+            if ot_periods:
+                overtime_games.append(game)
+        
+        scoring_data = []
+        for category, games_list in [
+            ("Close Games (≤5 pts)", close_games),
+            ("Blowouts (≥15 pts)", blowouts),
+            ("Scoring 100+", celtics_100_plus),
+            ("Scoring 110+", celtics_110_plus),
+            ("Scoring 120+", celtics_120_plus),
+            ("Overtime Games", overtime_games)
+        ]:
+            wins = sum(1 for g in games_list if 
+                (g.home_team == "Boston Celtics" and g.home_score > g.away_score) or
+                (g.away_team == "Boston Celtics" and g.away_score > g.home_score))
+            
+            if games_list:
+                win_pct = (wins/len(games_list))*100
+                scoring_data.append({
+                    "Category": category,
+                    "Record": f"{wins}-{len(games_list)-wins}",
+                    "Games": len(games_list),
+                    "Win %": f"{win_pct:.1f}%"
+                })
+        
+        st.table(pd.DataFrame(scoring_data))
+
+        # Quarter Analysis
+        st.subheader("Quarter Analysis")
+        
+        quarter_records = {
+            "After 1st": {"wins": 0, "total": 0},
+            "At Halftime": {"wins": 0, "total": 0},
+            "After 3rd": {"wins": 0, "total": 0}
+        }
+        
+        biggest_comeback = 0
+        biggest_lead_lost = 0
+        
+        for game in games:
+            celtics_is_home = game.home_team == "Boston Celtics"
+            quarters = sorted(game.quarter_scores, key=lambda x: x.period)
+            
+            # Track running score for each quarter
+            celtics_running = 0
+            opponent_running = 0
+            max_deficit = 0
+            max_lead = 0
+            
+            for q in quarters:
+                if q.period.startswith('Q'):  # Only regular quarters
+                    celtics_score = q.home_score if celtics_is_home else q.away_score
+                    opponent_score = q.away_score if celtics_is_home else q.home_score
+                    
+                    celtics_running += celtics_score
+                    opponent_running += opponent_score
+                    
+                    deficit = opponent_running - celtics_running
+                    max_deficit = min(max_deficit, deficit)
+                    max_lead = max(max_lead, -deficit)
+                    
+                    # Record quarter leads
+                    if q.period == 'Q1':
+                        quarter_records["After 1st"]["total"] += 1
+                        if celtics_running > opponent_running:
+                            quarter_records["After 1st"]["wins"] += 1
+                    elif q.period == 'Q2':
+                        quarter_records["At Halftime"]["total"] += 1
+                        if celtics_running > opponent_running:
+                            quarter_records["At Halftime"]["wins"] += 1
+                    elif q.period == 'Q3':
+                        quarter_records["After 3rd"]["total"] += 1
+                        if celtics_running > opponent_running:
+                            quarter_records["After 3rd"]["wins"] += 1
+            
+            # Update comeback/blown lead stats
+            celtics_won = (celtics_is_home and game.home_score > game.away_score) or \
+                         (not celtics_is_home and game.away_score > game.home_score)
+            
+            if celtics_won:
+                biggest_comeback = max(biggest_comeback, -max_deficit)
+            else:
+                biggest_lead_lost = max(biggest_lead_lost, max_lead)
+        
+        quarter_data = []
+        for period, record in quarter_records.items():
+            if record["total"] > 0:
+                win_pct = (record["wins"]/record["total"])*100
+                quarter_data.append({
+                    "When Leading": period,
+                    "Record": f"{record['wins']}-{record['total']-record['wins']}",
+                    "Games": record["total"],
+                    "Win %": f"{win_pct:.1f}%"
+                })
+        
+        st.table(pd.DataFrame(quarter_data))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Biggest Comeback Win", f"{biggest_comeback} pts")
+        with col2:
+            st.metric("Biggest Lead Lost", f"{biggest_lead_lost} pts")
+
     finally:
         session.close()
 

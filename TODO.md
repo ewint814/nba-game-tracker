@@ -20,6 +20,12 @@
 
 ## Next Steps
 
+### Immediate Tasks
+- [ ] Fix Play-In game logic in database
+- [ ] Add Play-In games to database
+- [ ] Update game type enum to properly handle Play-In games
+- [ ] Add support for legacy games (pre-June 2012):
+
 2. Data Dictionary Creation
    - [ ] PlayerAdvancedStats table
    - [ ] TeamAdvancedStats table
