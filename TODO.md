@@ -13,17 +13,12 @@
   - Officials and inactive players
   - Season series tracking (pre and post-game)
   - Player advanced statistics
+  - Team advanced statistics
 - Test API section with data verification
 - Database preview tool for development
 - Development tools for schema updates
 
 ## Next Steps
-
-### Immediate Tasks
-1. Team Advanced Stats
-   - [ ] Verify indices in NBA API response
-   - [ ] Handle 0.0 values like player stats
-   - [ ] Test in Streamlit app
 
 2. Data Dictionary Creation
    - [ ] PlayerAdvancedStats table
@@ -109,6 +104,7 @@
 - [ ] AssistLeaders (Not useful - season-level only)
 - [ ] AssistTracker (Not useful - single number only)
 - [x] BoxScoreAdvancedV2 (Useful - Added to database, implemented for both players and teams)
+- [x] BoxScoreAdvancedV3 (Useful - Implemented and replaced V2)
 
 ### To Evaluate 🔄
 - [ ] BoxScoreDefensive
