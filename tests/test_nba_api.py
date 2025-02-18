@@ -395,35 +395,193 @@ def test_endpoints_in_groups():
         print("\n" + "-" * 100)  # Separator between endpoints
 
 def test_boxscore_advanced():
-    """Test to see all available fields from BoxScoreAdvancedV2."""
-    from nba_api.stats import endpoints
+    """Test to see all available fields from BoxScoreAdvancedV3."""
+    from nba_api.stats.endpoints import boxscoreadvancedv3
+    from pprint import pprint
+    from src.data.nba_api_client import NBAApiClient
     
-    # Test with two different game IDs
-    game_ids = ["0022400773", "0022300642"]
+    # Test with one game ID for clarity
+    game_id = "0022400773"
     
-    for game_id in game_ids:
-        print(f"\nTesting Game ID: {game_id}")
+    print(f"\nTesting Game ID: {game_id}")
+    print("=" * 50)
+    
+    # Test our client's processing
+    client = NBAApiClient()
+    processed_data = client.get_advanced_stats(game_id)
+    
+    print("\nProcessed Data Structure:")
+    print(f"Number of players: {len(processed_data['player_stats'])}")
+    print(f"Number of teams: {len(processed_data['team_stats'])}")
+    
+    # Print example player data
+    if processed_data['player_stats']:
+        player = processed_data['player_stats'][0]
+        print("\nExample Player Data:")
+        
+        # Team info
+        print("\nTeam Info:")
+        team_fields = ['teamId', 'teamCity', 'teamName', 'teamTricode', 'teamSlug']
+        for field in team_fields:
+            print(f"{field}: {player.get(field)}")
+        
+        # Player info
+        print("\nPlayer Info:")
+        player_fields = ['personId', 'firstName', 'familyName', 'nameI', 'playerSlug', 
+                        'position', 'comment', 'jerseyNum']
+        for field in player_fields:
+            print(f"{field}: {player.get(field, 'Not found')}")
+        
+        # Statistics
+        print("\nStatistics:")
+        stat_fields = [
+            'minutes', 'estimatedOffensiveRating', 'offensiveRating',
+            'estimatedDefensiveRating', 'defensiveRating', 'estimatedNetRating',
+            'netRating', 'assistPercentage', 'assistToTurnover', 'assistRatio',
+            'offensiveReboundPercentage', 'defensiveReboundPercentage',
+            'reboundPercentage', 'turnoverRatio', 'effectiveFieldGoalPercentage',
+            'trueShootingPercentage', 'usagePercentage', 'estimatedUsagePercentage',
+            'estimatedPace', 'pace', 'pacePer40', 'possessions', 'pie'
+        ]
+        for field in stat_fields:
+            print(f"{field}: {player.get(field, 'Not found')}")
+    
+    # Print example team data
+    if processed_data['team_stats']:
+        team = processed_data['team_stats'][0]
+        print("\nExample Team Data:")
+        
+        # Team info
+        print("\nTeam Info:")
+        team_fields = ['teamId', 'teamCity', 'teamName', 'teamTricode', 'teamSlug']
+        for field in team_fields:
+            print(f"{field}: {team.get(field)}")
+        
+        # Statistics
+        print("\nStatistics:")
+        stat_fields = [
+            'minutes', 'estimatedOffensiveRating', 'offensiveRating',
+            'estimatedDefensiveRating', 'defensiveRating', 'estimatedNetRating',
+            'netRating', 'assistPercentage', 'assistToTurnover', 'assistRatio',
+            'offensiveReboundPercentage', 'defensiveReboundPercentage',
+            'reboundPercentage', 'estimatedTeamTurnoverPercentage', 'turnoverRatio',
+            'effectiveFieldGoalPercentage', 'trueShootingPercentage',
+            'usagePercentage', 'estimatedUsagePercentage', 'estimatedPace',
+            'pace', 'pacePer40', 'possessions', 'pie'
+        ]
+        for field in stat_fields:
+            print(f"{field}: {team.get(field, 'Not found')}")
+        
+        # Print all available keys for reference
+        print("\nAll Available Keys:")
+        print("Player keys:", sorted(player.keys()))
+        print("Team keys:", sorted(team.keys()))
+
+def test_advanced_stats_storage():
+    """Test to verify the exact values being stored in the database."""
+    from src.data.database_models import Base, PlayerAdvancedStats, Game
+    from src.data.nba_api_client import NBAApiClient
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    import os
+
+    # Get the absolute path to the database file
+    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'celtics.db')
+    
+    # Create database connection
+    engine = create_engine(f'sqlite:///{db_path}')
+    Base.metadata.create_all(engine)  # Create tables if they don't exist
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # Get sample data from API
+        client = NBAApiClient()
+        game_id = "0022400773"  # Use a known game ID
+        advanced_data = client.get_advanced_stats(game_id)
+        
+        print("\nAPI Response Data:")
+        if advanced_data['player_stats']:
+            player = advanced_data['player_stats'][0]
+            print("\nSample Player Data from API:")
+            print(f"Player: {player['firstName']} {player['familyName']}")
+            print("\nStatistics:")
+            if 'statistics' in player:
+                for key, value in player['statistics'].items():
+                    print(f"{key}: {value} (type: {type(value)})")
+        
+        # Now check database if we have any data
+        db_player = session.query(PlayerAdvancedStats).first()
+        if db_player:
+            print("\nDatabase Values:")
+            for column in db_player.__table__.columns:
+                value = getattr(db_player, column.name)
+                print(f"{column.name}: {value} (type: {type(value)})")
+        else:
+            print("\nNo player stats found in database")
+            
+    finally:
+        session.close()
+
+def test_pie_values():
+    """Test to specifically examine PIE values from the API and database."""
+    from src.data.nba_api_client import NBAApiClient
+    from src.data.database_models import Base, PlayerAdvancedStats, TeamAdvancedStats
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    import os
+    from pprint import pprint
+    
+    # Get the path to the database file
+    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'celtics.db')
+    
+    # Create database connection
+    engine = create_engine(f'sqlite:///{db_path}')
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # First, let's look at the raw API data
+        client = NBAApiClient()
+        game_id = "0022400773"  # Use a known game ID
+        advanced_data = client.get_advanced_stats(game_id)
+        
+        print("\nRAW API Response Structure:")
         print("=" * 50)
         
-        response = endpoints.BoxScoreAdvancedV2(game_id=game_id)
-        data = response.get_dict()
-        
-        # Print all headers first
-        headers = data['resultSets'][0]['headers']
-        print("\nField Names:")
-        for i, header in enumerate(headers):
-            print(f"{i}: {header}")
+        # Print first player's complete data structure
+        if advanced_data['player_stats']:
+            print("\nFirst Player Complete Data:")
+            pprint(advanced_data['player_stats'][0])
             
-        # Find TM_TOV_PCT index
-        tov_pct_index = headers.index('TM_TOV_PCT')
-        print(f"\nTM_TOV_PCT is at index: {tov_pct_index}")
+            # Specifically look at statistics
+            print("\nFirst Player Statistics:")
+            stats = advanced_data['player_stats'][0].get('statistics', {})
+            pprint(stats)
         
-        # Show some sample values
-        print("\nSample TOV_RATIO values:")
-        for row in data['resultSets'][0]['rowSet'][:5]:  # First 5 players
-            player_name = row[5]
-            tov_pct = row[tov_pct_index]
-            print(f"{player_name}: {tov_pct}")
+        # Print first team's complete data structure
+        if advanced_data['team_stats']:
+            print("\nFirst Team Complete Data:")
+            pprint(advanced_data['team_stats'][0])
+            
+            # Specifically look at statistics
+            print("\nFirst Team Statistics:")
+            stats = advanced_data['team_stats'][0].get('statistics', {})
+            pprint(stats)
+        
+        print("\nChecking Database:")
+        print("=" * 50)
+        
+        # Check player PIE values in database
+        print("\nPlayer PIE Values in Database:")
+        players = session.query(PlayerAdvancedStats).filter_by(game_id=game_id).all()
+        for player in players:
+            name = f"{player.first_name} {player.last_name}"
+            pie_str = f"{player.pie:7.3f}" if player.pie is not None else "  None"
+            print(f"{name:25} PIE: {pie_str} (Minutes: {player.minutes})")
+            
+    finally:
+        session.close()
 
 if __name__ == "__main__":
-    test_boxscore_advanced() 
+    test_pie_values() 

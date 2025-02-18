@@ -5,7 +5,7 @@ This module provides a wrapper around the nba_api package to fetch game data,
 statistics, and other NBA-related information.
 """
 
-from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2, boxscoreadvancedv2
+from nba_api.stats.endpoints import scoreboardv2, boxscoresummaryv2, boxscoreadvancedv3
 from nba_api.stats.static import teams
 from datetime import datetime
 from src.utils.game_calculations import calculate_series_stats
@@ -250,7 +250,7 @@ class NBAApiClient:
 
     def get_advanced_stats(self, game_id):
         """
-        Get advanced statistics for a specific game.
+        Get advanced statistics for a specific game using V3 endpoint.
         
         Args:
             game_id (str): NBA API game ID
@@ -259,11 +259,38 @@ class NBAApiClient:
             dict: Dictionary containing advanced stats for players and teams
         """
         try:
-            response = boxscoreadvancedv2.BoxScoreAdvancedV2(game_id=game_id)
+            response = boxscoreadvancedv3.BoxScoreAdvancedV3(game_id=game_id)
             data = response.get_dict()
+            box_score = data['boxScoreAdvanced']
+            
+            # Collect all players from both teams with their team info
+            players = []
+            for team_type in ['homeTeam', 'awayTeam']:
+                if team_type in box_score:
+                    team = box_score[team_type]
+                    team_info = {
+                        'teamId': team['teamId'],
+                        'teamCity': team['teamCity'],
+                        'teamName': team['teamName'],
+                        'teamTricode': team['teamTricode'],
+                        'teamSlug': team['teamSlug']
+                    }
+                    
+                    # Add team info to each player
+                    if 'players' in team:
+                        for player in team['players']:
+                            player.update(team_info)
+                            players.append(player)
+            
+            # Collect team stats
+            teams = []
+            for team_type in ['homeTeam', 'awayTeam']:
+                if team_type in box_score:
+                    teams.append(box_score[team_type])
             
             return {
-                'resultSets': data['resultSets']  # Keep same structure for compatibility
+                'player_stats': players,
+                'team_stats': teams
             }
             
         except Exception as e:

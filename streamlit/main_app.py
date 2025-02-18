@@ -8,7 +8,7 @@ import pandas as pd
 import json
 import time
 import gc
-from nba_api.stats.endpoints import boxscoreadvancedv2
+from nba_api.stats.endpoints import boxscoreadvancedv3
 
 # Add the src directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -323,86 +323,107 @@ def show_add_game():
                             advanced_data = client.get_advanced_stats(game_data['game_id'])
                             
                             # Create player advanced stats
-                            player_stats = advanced_data['resultSets'][0]['rowSet']  # Player Stats
-                            for player in player_stats:
-                                # Get comment field and determine if player was a starter
-                                starting_position = player[7]  # COMMENT field
-                                starter = bool(starting_position and starting_position in ['F', 'G', 'C'])
+                            for player in advanced_data['player_stats']:
+                                stats = player.get('statistics', {})
                                 
-                                # Get status and determine if player played based on if they have stats
-                                status = player[8] if player[8] and player[8].strip() else None  # COMMENT field
-                                played = status is None
+                                # Parse status and reason from comment
+                                comment = player.get('comment', '').strip()
+                                status = None
+                                status_reason = None
+                                if comment:
+                                    if '-' in comment:
+                                        parts = comment.split('-', 1)
+                                        status = parts[0].strip()
+                                        status_reason = parts[1].strip()
+                                    else:
+                                        status = comment
                                 
-                                def convert_stat(value):
-                                    if value is None or (isinstance(value, (int, float)) and value == 0.0):
-                                        return None
-                                    return float(value)
+                                # Handle minutes - convert empty string to None
+                                minutes = stats.get('minutes')
+                                if minutes == '':
+                                    minutes = None
+                                
+                                # Convert 0.0 to None for advanced stats and handle PIE case
+                                stats_dict = {}
+                                for key, value in stats.items():
+                                    # Special handling for PIE (uppercase in API)
+                                    if key == 'PIE':
+                                        key = 'pie'
+                                    if isinstance(value, (int, float)) and value == 0:
+                                        stats_dict[key] = None
+                                    else:
+                                        stats_dict[key] = value
                                 
                                 player_advanced = PlayerAdvancedStats(
                                     game_id=str(game_data['game_id']),
-                                    team_id=player[1],
-                                    player_id=player[4],
-                                    player_name=player[5],
-                                    starting_position=starting_position if starter else None,
-                                    starter=starter,
+                                    team_id=player['teamId'],
+                                    player_id=player['personId'],
+                                    first_name=player['firstName'],
+                                    last_name=player['familyName'],
+                                    starting_position=player['position'] or None,
+                                    starter=bool(player['position']),
                                     status=status,
-                                    played=played,
-                                    e_off_rating=convert_stat(player[10]),
-                                    off_rating=convert_stat(player[11]),
-                                    e_def_rating=convert_stat(player[12]),
-                                    def_rating=convert_stat(player[13]),
-                                    e_net_rating=convert_stat(player[14]),
-                                    net_rating=convert_stat(player[15]),
-                                    ast_pct=convert_stat(player[16]),
-                                    ast_tov=convert_stat(player[17]),
-                                    ast_ratio=convert_stat(player[18]),
-                                    oreb_pct=convert_stat(player[19]),
-                                    dreb_pct=convert_stat(player[20]),
-                                    reb_pct=convert_stat(player[21]),
-                                    tov_ratio=convert_stat(player[22]),
-                                    efg_pct=convert_stat(player[23]),
-                                    ts_pct=convert_stat(player[24]),
-                                    usg_pct=convert_stat(player[25]),
-                                    e_usg_pct=convert_stat(player[26]),
-                                    e_pace=convert_stat(player[27]),
-                                    pace=convert_stat(player[28]),
-                                    pace_per40=convert_stat(player[29]),
-                                    poss=convert_stat(player[30]),
-                                    pie=convert_stat(player[31])
+                                    status_reason=status_reason,
+                                    minutes=minutes,
+                                    pie=stats_dict.get('pie'),
+                                    estimated_offensive_rating=stats_dict.get('estimatedOffensiveRating'),
+                                    offensive_rating=stats_dict.get('offensiveRating'),
+                                    estimated_defensive_rating=stats_dict.get('estimatedDefensiveRating'),
+                                    defensive_rating=stats_dict.get('defensiveRating'),
+                                    estimated_net_rating=stats_dict.get('estimatedNetRating'),
+                                    net_rating=stats_dict.get('netRating'),
+                                    assist_percentage=stats_dict.get('assistPercentage'),
+                                    assist_to_turnover=stats_dict.get('assistToTurnover'),
+                                    assist_ratio=stats_dict.get('assistRatio'),
+                                    offensive_rebound_percentage=stats_dict.get('offensiveReboundPercentage'),
+                                    defensive_rebound_percentage=stats_dict.get('defensiveReboundPercentage'),
+                                    rebound_percentage=stats_dict.get('reboundPercentage'),
+                                    turnover_ratio=stats_dict.get('turnoverRatio'),
+                                    effective_field_goal_percentage=stats_dict.get('effectiveFieldGoalPercentage'),
+                                    true_shooting_percentage=stats_dict.get('trueShootingPercentage'),
+                                    usage_percentage=stats_dict.get('usagePercentage'),
+                                    estimated_usage_percentage=stats_dict.get('estimatedUsagePercentage'),
+                                    estimated_pace=stats_dict.get('estimatedPace'),
+                                    pace=stats_dict.get('pace'),
+                                    pace_per40=stats_dict.get('pacePer40'),
+                                    possessions=int(stats_dict.get('possessions')) if stats_dict.get('possessions') else None
                                 )
                                 session.add(player_advanced)
                             
                             # Create team advanced stats
-                            team_stats = advanced_data['resultSets'][1]['rowSet']  # Team Stats
-                            for team in team_stats:
+                            for team in advanced_data['team_stats']:
+                                stats = team.get('statistics', {})
+                                
+                                # Handle PIE case (uppercase in API)
+                                if 'PIE' in stats:
+                                    pie_value = stats['PIE']
+                                else:
+                                    pie_value = None
+                                
                                 team_advanced = TeamAdvancedStats(
                                     game_id=str(game_data['game_id']),
-                                    team_id=team[1],
-                                    team_name=team[3],
-                                    team_abbreviation=team[2],
-                                    team_city=team[4],
-                                    e_off_rating=convert_stat(team[10]),
-                                    off_rating=convert_stat(team[11]),
-                                    e_def_rating=convert_stat(team[12]),
-                                    def_rating=convert_stat(team[13]),
-                                    e_net_rating=convert_stat(team[14]),
-                                    net_rating=convert_stat(team[15]),
-                                    ast_pct=convert_stat(team[16]),
-                                    ast_tov=convert_stat(team[17]),
-                                    ast_ratio=convert_stat(team[18]),
-                                    oreb_pct=convert_stat(team[19]),
-                                    dreb_pct=convert_stat(team[20]),
-                                    reb_pct=convert_stat(team[21]),
-                                    e_tov_ratio=convert_stat(team[22]),  # Renamed from e_tm_tov_pct
-                                    tov_ratio=convert_stat(team[23]),    # Renamed from tm_tov_pct
-                                    efg_pct=convert_stat(team[24]),
-                                    ts_pct=convert_stat(team[25]),
-                                    e_usg_pct=convert_stat(team[26]),
-                                    e_pace=convert_stat(team[27]),
-                                    pace=convert_stat(team[28]),
-                                    pace_per40=convert_stat(team[29]),
-                                    poss=convert_stat(team[30]),
-                                    pie=convert_stat(team[31])
+                                    team_id=team['teamId'],
+                                    estimated_offensive_rating=stats.get('estimatedOffensiveRating'),
+                                    offensive_rating=stats.get('offensiveRating'),
+                                    estimated_defensive_rating=stats.get('estimatedDefensiveRating'),
+                                    defensive_rating=stats.get('defensiveRating'),
+                                    estimated_net_rating=stats.get('estimatedNetRating'),
+                                    net_rating=stats.get('netRating'),
+                                    assist_percentage=stats.get('assistPercentage'),
+                                    assist_to_turnover=stats.get('assistToTurnover'),
+                                    assist_ratio=stats.get('assistRatio'),
+                                    offensive_rebound_percentage=stats.get('offensiveReboundPercentage'),
+                                    defensive_rebound_percentage=stats.get('defensiveReboundPercentage'),
+                                    rebound_percentage=stats.get('reboundPercentage'),
+                                    estimated_team_turnover_percentage=stats.get('estimatedTeamTurnoverPercentage'),
+                                    turnover_ratio=stats.get('turnoverRatio'),
+                                    effective_field_goal_percentage=stats.get('effectiveFieldGoalPercentage'),
+                                    true_shooting_percentage=stats.get('trueShootingPercentage'),
+                                    estimated_pace=stats.get('estimatedPace'),
+                                    pace=stats.get('pace'),
+                                    pace_per40=stats.get('pacePer40'),
+                                    possessions=int(stats.get('possessions')) if stats.get('possessions') else None,
+                                    pie=pie_value
                                 )
                                 session.add(team_advanced)
 
