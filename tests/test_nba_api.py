@@ -583,5 +583,144 @@ def test_pie_values():
     finally:
         session.close()
 
+def test_play_in_game():
+    """Test to examine Play-In game structure and differences."""
+    print("\nExamining Play-In Game Structure")
+    print("=" * 50)
+    
+    try:
+        play_in_game_id = "0052000101"  # 2020-21 Play-In game
+        
+        # Test our client
+        print("\nTesting NBAApiClient:")
+        from src.data.nba_api_client import NBAApiClient
+        from src.data.database_models import Base, Game, LastMeeting
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import os
+        
+        # Get the absolute path to the database file
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'celtics.db')
+        
+        # Create database connection
+        engine = create_engine(f'sqlite:///{db_path}')
+        Base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        
+        try:
+            client = NBAApiClient()
+            detailed_stats = client.get_detailed_stats(play_in_game_id)
+            
+            print("\nDetailed stats retrieved successfully")
+            print("\nAll fields in detailed_stats:")
+            for key, value in sorted(detailed_stats.items()):
+                print(f"  {key}: {value} (type: {type(value)})")
+            
+            # Try to create Game object
+            print("\nAttempting to create Game object...")
+            game = Game(**detailed_stats)
+            print("Game object created successfully")
+            
+            # Try to create LastMeeting object if data exists
+            if 'last_meeting_game_id' in detailed_stats:
+                print("\nAttempting to create LastMeeting object...")
+                last_meeting_data = {
+                    'game_id': play_in_game_id,
+                    'last_meeting_game_id': detailed_stats.get('last_meeting_game_id'),
+                    'last_meeting_game_date': detailed_stats.get('last_meeting_game_date'),
+                    'home_team_id': detailed_stats.get('last_meeting_home_team_id'),
+                    'away_team_id': detailed_stats.get('last_meeting_visitor_team_id'),
+                    'home_team_score': detailed_stats.get('last_meeting_home_points'),
+                    'away_team_score': detailed_stats.get('last_meeting_visitor_points')
+                }
+                last_meeting = LastMeeting(**last_meeting_data)
+                print("LastMeeting object created successfully")
+            
+            # Try to save to database
+            print("\nAttempting to save to database...")
+            session.add(game)
+            if 'last_meeting_game_id' in detailed_stats:
+                session.add(last_meeting)
+            session.commit()
+            print("Game saved successfully")
+            
+        except Exception as e:
+            print(f"\nError: {str(e)}")
+            session.rollback()
+            import traceback
+            traceback.print_exc()
+        finally:
+            session.close()
+            
+    except Exception as e:
+        print(f"\nError in test: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
+def test_multiple_game_types():
+    """Test both Play-In and regular season games to ensure compatibility."""
+    print("\nTesting Multiple Game Types")
+    print("=" * 50)
+    
+    try:
+        # Test both a Play-In game and a regular season game
+        games_to_test = [
+            ("0052000101", "Play-In Game"),           # 2020-21 Play-In
+            ("0022300642", "Regular Season Game")     # 2023-24 Regular Season
+        ]
+        
+        from src.data.nba_api_client import NBAApiClient
+        from src.data.database_models import Base, Game, LastMeeting
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import os
+        
+        # Create database connection
+        engine = create_engine('sqlite:///:memory:')  # Use in-memory DB for testing
+        Base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        client = NBAApiClient()
+        
+        try:
+            for game_id, game_type in games_to_test:
+                print(f"\nTesting {game_type} (ID: {game_id})")
+                print("-" * 40)
+                
+                # Get the data and try to save it
+                try:
+                    detailed_stats = client.get_detailed_stats(game_id)
+                    print(f"\nGot detailed stats for {game_type}")
+                    
+                    # Create and save Game object
+                    game = Game(**detailed_stats)
+                    session.add(game)
+                    session.commit()
+                    print(f"Successfully saved {game_type} to database")
+                    
+                    # Verify the data was saved correctly
+                    saved_game = session.query(Game).filter_by(game_id=game_id).first()
+                    print(f"\nVerified data for {game_type}:")
+                    print(f"  Game ID: {saved_game.game_id}")
+                    print(f"  Teams: {saved_game.away_team_abbrev} @ {saved_game.home_team_abbrev}")
+                    print(f"  Season: {saved_game.season}")
+                    
+                except Exception as e:
+                    print(f"Error processing {game_type}: {str(e)}")
+                    session.rollback()
+                    import traceback
+                    traceback.print_exc()
+                
+                print("-" * 40)
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        print(f"\nError in test: {str(e)}")
+        import traceback
+        traceback.print_exc()
+
 if __name__ == "__main__":
-    test_pie_values() 
+    test_multiple_game_types() 
